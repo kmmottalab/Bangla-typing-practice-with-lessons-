@@ -1,7 +1,7 @@
-/* ═══════════════════════════════════════════════════════════
-   বাংলা টাইপিং একাডেমি — APP.JS
-   মূল অ্যাপ্লিকেশন লজিক
-   ═══════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════
+   বাংলা টাইপিং একাডেমি — APP.JS (PARMANU v3)
+   সম্পূর্ণ নতুন — লাইভ কীবোর্ড + হ্যান্ড + গ্রাফ সব ফিক্সড
+   ═══════════════════════════════════════════════════════════════ */
 
 class TypingApp {
   constructor() {
@@ -14,6 +14,8 @@ class TypingApp {
     this.wrongChars = 0;
     this.totalTyped = 0;
     this.currentPage = 'dashboard';
+    this.searchQuery = '';
+    this.lastWrongChar = null;
 
     /* ───── Storage ───── */
     this.progress = this.loadProgress();
@@ -23,6 +25,7 @@ class TypingApp {
     /* ───── Charts ───── */
     this.chart = null;
     this.detailedChart = null;
+    this.chartRetryCount = 0;
 
     /* ───── Game ───── */
     this.gameActive = false;
@@ -35,86 +38,150 @@ class TypingApp {
     /* ───── Exam ───── */
     this.examInterval = null;
     this.examActive = false;
+    this.examText = '';
+    this.examStartTime = null;
 
     this.init();
   }
 
-  /* ═══════════════════════════════════════════════
-     INIT — সব সেটআপ
-     ═══════════════════════════════════════════════ */
+  /* ═══════════════════════════════════════════════════════
+     INIT
+     ═══════════════════════════════════════════════════════ */
   init() {
     this.setupNavigation();
     this.setupThemeToggle();
     this.setupTypingInput();
     this.setupGameInput();
-    this.setupExamInput();
     this.setupSearch();
     this.updateStreak();
 
-    // Keyboard setup delay — keyboard.js এ DOMContentLoaded এ init হয়
+    /* ═══ পারমাণবিক init sequence — সব ফিক্স ═══ */
+    const bootApp = () => {
+      try {
+        this.renderLessons();
+        this.loadDashboard();
+        this.renderStats();
+        console.log('%c✓ App Initialized', 'color:#10b981;font-weight:bold;');
+      } catch (err) {
+        console.error('Init error:', err);
+      }
+    };
+
+    /* DOM settle হওয়ার পর কল */
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => setTimeout(bootApp, 200));
+    } else {
+      setTimeout(bootApp, 200);
+    }
+
+    /* Chart + Keyboard force init */
     setTimeout(() => {
-      this.renderLessons();
-      this.loadDashboard();
-      this.renderStats();
-      console.log('%c✓ App Initialized', 'color: #10b981; font-weight: bold;');
-    }, 250);
+      this.renderChart();
+
+      /* ═══ LIVE KEYBOARD — টাইপিং পেজে থাকলে reinit ═══ */
+      if (document.getElementById('page-typing').classList.contains('active')) {
+        if (typeof initLiveKeyboard === 'function') initLiveKeyboard();
+      }
+
+      /* ═══ STANDALONE KEYBOARD ═══ */
+      if (document.getElementById('page-keyboard').classList.contains('active')) {
+        if (typeof initStandaloneKeyboard === 'function') initStandaloneKeyboard();
+      }
+    }, 800);
+
+    /* Window resize — keyboard reposition */
+    window.addEventListener('resize', () => {
+      if (this.currentPage === 'typing' && this.currentLesson) {
+        setTimeout(() => this.updateHandIndicator(), 200);
+      }
+      if (this.currentPage === 'dashboard') {
+        setTimeout(() => this.renderChart(), 300);
+      }
+    });
   }
 
-  /* ═══════════════════════════════════════════════
-     NAVIGATION — পেজ স্যুইচিং
-     ═══════════════════════════════════════════════ */
+  /* ═══════════════════════════════════════════════════════
+     NAVIGATION
+     ═══════════════════════════════════════════════════════ */
   setupNavigation() {
     document.querySelectorAll('.nav-btn[data-tab]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        this.showPage(btn.dataset.tab);
-      });
+      btn.addEventListener('click', () => this.showPage(btn.dataset.tab));
     });
   }
 
   showPage(name) {
-    // Hide all pages
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    const page = document.getElementById('page-' + name);
-    if (page) page.classList.add('active');
+    try {
+      /* Hide all, show target */
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      const page = document.getElementById('page-' + name);
+      if (page) page.classList.add('active');
 
-    // Nav button active state
-    document.querySelectorAll('.nav-btn[data-tab]').forEach(b => {
-      b.classList.toggle('active', b.dataset.tab === name);
-    });
+      /* Nav active */
+      document.querySelectorAll('.nav-btn[data-tab]').forEach(b => {
+        b.classList.toggle('active', b.dataset.tab === name);
+      });
 
-    // Mobile nav close
-    const nav = document.getElementById('navMenu');
-    if (nav && nav.classList.contains('show')) {
-      const collapse = bootstrap.Collapse.getInstance(nav);
-      if (collapse) collapse.hide();
-      else new bootstrap.Collapse(nav).hide();
-    }
-
-    this.currentPage = name;
-
-    // Page-specific refresh
-    if (name === 'lessons') this.renderLessons();
-    if (name === 'stats') this.renderStats();
-    if (name === 'dashboard') this.loadDashboard();
-    if (name === 'keyboard') {
-      // Ensure keyboard is rendered
-      if (!standaloneKeyboard && typeof initStandaloneKeyboard === 'function') {
-        setTimeout(initStandaloneKeyboard, 100);
+      /* Mobile nav close */
+      const nav = document.getElementById('navMenu');
+      if (nav && nav.classList.contains('show')) {
+        const collapse = bootstrap.Collapse.getInstance(nav);
+        if (collapse) collapse.hide();
+        else new bootstrap.Collapse(nav).hide();
       }
-    }
 
-    // Scroll top
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+      this.currentPage = name;
+
+      /* ═══ PAGE-SPECIFIC REFRESH (RAF + setTimeout for DOM) ═══ */
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          try {
+            if (name === 'lessons') this.renderLessons();
+            if (name === 'stats') this.renderStats();
+
+            if (name === 'dashboard') {
+              this.loadDashboard();
+              setTimeout(() => this.renderChart(), 150);
+            }
+
+            if (name === 'keyboard') {
+              if (typeof initStandaloneKeyboard === 'function') {
+                initStandaloneKeyboard();
+              }
+            }
+
+            if (name === 'typing') {
+              /* ═══ LIVE KEYBOARD PARMANU REFRESH ═══ */
+              if (typeof initLiveKeyboard === 'function') {
+                initLiveKeyboard();
+              }
+              /* Hand position re-calc after visible */
+              setTimeout(() => {
+                if (typeof refreshLiveKeyboard === 'function') {
+                  refreshLiveKeyboard();
+                }
+                this.updateHandIndicator();
+              }, 250);
+            }
+          } catch (err) {
+            console.error('Page refresh error:', err);
+          }
+        }, 80);
+      });
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (err) {
+      console.error('showPage error:', err);
+    }
   }
 
-  /* ═══════════════════════════════════════════════
+  /* ═══════════════════════════════════════════════════════
      THEME
-     ═══════════════════════════════════════════════ */
+     ═══════════════════════════════════════════════════════ */
   setupThemeToggle() {
     const btn = document.getElementById('themeBtn');
     if (!btn) return;
 
-    // Restore saved theme
+    /* Restore saved theme */
     if (this.settings.theme) {
       document.documentElement.setAttribute('data-theme', this.settings.theme);
     }
@@ -129,18 +196,18 @@ class TypingApp {
     this.settings.theme = next;
     this.saveSettings();
 
-    // Refresh charts
+    /* Refresh charts */
     setTimeout(() => {
       if (this.currentPage === 'dashboard') this.renderChart();
       if (this.currentPage === 'stats') this.renderStats();
-    }, 150);
+    }, 200);
 
     if (window.animations?.sound) animations.sound.pop();
   }
 
-  /* ═══════════════════════════════════════════════
+  /* ═══════════════════════════════════════════════════════
      STORAGE
-     ═══════════════════════════════════════════════ */
+     ═══════════════════════════════════════════════════════ */
   loadProgress() {
     try { return JSON.parse(localStorage.getItem('bnTypingProgress') || '{}'); }
     catch (e) { return {}; }
@@ -186,24 +253,26 @@ class TypingApp {
     }
   }
 
-  /* ═══════════════════════════════════════════════
-     LESSONS RENDERING — গ্রুপ অনুযায়ী
-     ═══════════════════════════════════════════════ */
+  /* ═══════════════════════════════════════════════════════
+     SEARCH
+     ═══════════════════════════════════════════════════════ */
   setupSearch() {
     const search = document.getElementById('lessonSearch');
-    if (search) {
-      search.addEventListener('input', (e) => {
-        this.searchQuery = e.target.value.toLowerCase().trim();
-        this.renderLessons();
-      });
-    }
+    if (!search) return;
+    search.addEventListener('input', (e) => {
+      this.searchQuery = e.target.value.toLowerCase().trim();
+      this.renderLessons();
+    });
   }
 
+  /* ═══════════════════════════════════════════════════════
+     LESSONS RENDERING — গ্রুপ অনুযায়ী
+     ═══════════════════════════════════════════════════════ */
   renderLessons() {
     const grid = document.getElementById('lessonsGrid');
     if (!grid) return;
 
-    // Filter
+    /* Filter */
     let lessons = LESSONS;
     if (this.searchQuery) {
       lessons = lessons.filter(l =>
@@ -212,7 +281,7 @@ class TypingApp {
       );
     }
 
-    // Count badge
+    /* Count badge */
     const count = document.getElementById('lessonCount');
     if (count) count.textContent = lessons.length;
 
@@ -221,7 +290,7 @@ class TypingApp {
       return;
     }
 
-    // Group by group
+    /* Group by group */
     const grouped = {};
     lessons.forEach(l => {
       const g = l.group || 'other';
@@ -229,8 +298,8 @@ class TypingApp {
       grouped[g].push(l);
     });
 
-    // Render groups in order
-    const groupOrder = ['bottom-row', 'top-row', 'special', 'shift', 'swaroborno', 'numbers', 'juktakkhor', 'bakyo'];
+    /* Render groups in order */
+    const groupOrder = ['bottom-row', 'top-row', 'special', 'shift', 'swaroborno', 'numbers', 'juktakkhor', 'bakyo', 'other'];
     let html = '';
 
     groupOrder.forEach(gid => {
@@ -239,13 +308,13 @@ class TypingApp {
       const items = grouped[gid];
 
       html += `
-        <div class="col-12 mb-2">
+        <div class="col-12 mb-2 mt-3">
           <div class="group-header glass p-3" style="border-left: 5px solid ${gInfo.color};">
             <div class="d-flex align-items-center gap-2 flex-wrap">
               <span style="font-size:1.5rem;">${gInfo.icon}</span>
               <h5 class="mb-0">${gInfo.name}</h5>
               <span class="badge" style="background:${gInfo.color};">${items.length} লেসন</span>
-              <small class="opacity-75 ms-auto">${gInfo.desc}</small>
+              <small class="opacity-75 ms-auto d-none d-md-inline">${gInfo.desc}</small>
             </div>
           </div>
         </div>
@@ -271,41 +340,46 @@ class TypingApp {
 
     grid.innerHTML = html;
 
-    // Attach click handlers
+    /* Attach click handlers */
     grid.querySelectorAll('.lesson-card').forEach(card => {
       card.addEventListener('click', () => {
         this.openLesson(parseInt(card.dataset.id));
       });
     });
 
-    // Entry animation
+    /* Entry animation */
     if (window.animations?.staggerIn) {
-      animations.staggerIn(grid, '.lesson-card', 20);
+      animations.staggerIn(grid, '.lesson-card', 15);
     }
   }
 
-  /* ═══════════════════════════════════════════════
-     OPEN LESSON
-     ═══════════════════════════════════════════════ */
+  /* ═══════════════════════════════════════════════════════
+     OPEN LESSON — পারমাণবিক
+     ═══════════════════════════════════════════════════════ */
   openLesson(id) {
     const lesson = LESSONS.find(l => l.id === id);
     if (!lesson) return;
 
+    /* Reset state */
     this.currentLesson = lesson;
     this.currentIndex = 0;
     this.startTime = null;
     this.correctChars = 0;
     this.wrongChars = 0;
     this.totalTyped = 0;
+    this.lastWrongChar = null;
 
-    if (this.timerInterval) clearInterval(this.timerInterval);
+    if (this.timerInterval) {
+      clearInterval(this.timerInterval);
+      this.timerInterval = null;
+    }
     if (window.animations?.resetCombo) animations.resetCombo();
 
-    // Set title
+    /* Title */
     const titleEl = document.getElementById('lessonTitle');
     if (titleEl) titleEl.textContent = `${id}. ${lesson.title}`;
 
-    // Reset input
+    /* Input reset */
     const input = document.getElementById('typeInput');
     if (input) {
       input.value = '';
@@ -313,31 +387,42 @@ class TypingApp {
       input.setAttribute('data-expected', lesson.text);
     }
 
-    // Reset stats
+    /* Stats reset */
     this.updateStatDisplay('timer', '0:00');
     this.updateStatDisplay('wpm', '0');
     this.updateStatDisplay('accuracy', '100');
     this.updateStatDisplay('errors', '0');
 
+    /* Progress bar reset */
     const progressBar = document.getElementById('lessonProgress');
     if (progressBar) progressBar.style.width = '0%';
 
-    // Render display
+    /* Render text */
     this.renderTextDisplay();
 
-    // Switch page
+    /* Switch page */
     this.showPage('typing');
 
-    // Highlight lesson keys on live keyboard
+    /* ═══ LIVE KEYBOARD + HAND PARMANU SETUP ═══ */
     setTimeout(() => {
-      if (typeof highlightLessonKeysOnKeyboard === 'function') {
-        highlightLessonKeysOnKeyboard(lesson.keys || []);
+      /* 1. Reinit keyboard (guarantee container visible) */
+      if (typeof initLiveKeyboard === 'function') {
+        initLiveKeyboard();
       }
-      // Point hand at first char
-      this.updateHandIndicator();
-      // Focus input
-      input?.focus();
-    }, 400);
+
+      /* 2. Highlight lesson keys */
+      setTimeout(() => {
+        if (typeof highlightLessonKeysOnKeyboard === 'function') {
+          highlightLessonKeysOnKeyboard(lesson.keys || []);
+        }
+
+        /* 3. Point hand at first char */
+        this.updateHandIndicator();
+
+        /* 4. Focus input */
+        input?.focus();
+      }, 200);
+    }, 350);
   }
 
   updateStatDisplay(id, value) {
@@ -345,18 +430,23 @@ class TypingApp {
     if (el) el.textContent = value;
   }
 
+  /* ═══════════════════════════════════════════════════════
+     TEXT DISPLAY
+     ═══════════════════════════════════════════════════════ */
   renderTextDisplay() {
     const disp = document.getElementById('textDisplay');
     if (!disp || !this.currentLesson) return;
 
     const target = this.currentLesson.text;
     const typed = document.getElementById('typeInput')?.value || '';
+    const targetChars = Array.from(target);
+    const typedChars = Array.from(typed);
 
-    disp.innerHTML = [...target].map((ch, i) => {
+    disp.innerHTML = targetChars.map((ch, i) => {
       let cls = 'char';
-      if (i < typed.length) {
-        cls += typed[i] === ch ? ' correct' : ' wrong';
-      } else if (i === typed.length) {
+      if (i < typedChars.length) {
+        cls += typedChars[i] === ch ? ' correct' : ' wrong';
+      } else if (i === typedChars.length) {
         cls += ' current';
       }
       const display = ch === ' ' ? '&nbsp;' : (ch === '\n' ? '<br>' : ch);
@@ -364,9 +454,9 @@ class TypingApp {
     }).join('');
   }
 
-  /* ═══════════════════════════════════════════════
-     TYPING INPUT HANDLER — Unicode সঠিকভাবে
-     ═══════════════════════════════════════════════ */
+  /* ═══════════════════════════════════════════════════════
+     TYPING INPUT — Unicode सঠিকভাবে
+     ═══════════════════════════════════════════════════════ */
   setupTypingInput() {
     const input = document.getElementById('typeInput');
     if (!input) return;
@@ -381,22 +471,20 @@ class TypingApp {
 
     const target = this.currentLesson.text;
     const val = e.target.value;
+    const targetChars = Array.from(target);
+    const typedChars = Array.from(val);
 
-    // Start timer on first char
-    if (!this.startTime && val.length > 0) {
+    /* Start timer on first char */
+    if (!this.startTime && typedChars.length > 0) {
       this.startTime = Date.now();
       this.startTimer();
     }
 
-    // Unicode-safe comparison (Bengali combining chars)
-    // Use Array.from for proper Unicode handling
-    const targetChars = Array.from(target);
-    const typedChars = Array.from(val);
-
+    /* Count correct/wrong */
     let correct = 0;
     let wrong = 0;
+    let firstWrongIdx = -1;
 
-    // Re-render display
     const disp = document.getElementById('textDisplay');
     if (disp) {
       disp.innerHTML = targetChars.map((ch, i) => {
@@ -408,6 +496,7 @@ class TypingApp {
           } else {
             cls += ' wrong';
             wrong++;
+            if (firstWrongIdx === -1) firstWrongIdx = i;
           }
         } else if (i === typedChars.length) {
           cls += ' current';
@@ -417,25 +506,29 @@ class TypingApp {
       }).join('');
     }
 
-    // Track wrong count incrementally for sound
-    if (wrong > this.wrongChars) {
-      if (window.animations?.triggerWrongChar) {
-        animations.triggerWrongChar(null);
+    /* Sound + effects */
+    const prevWrong = this.wrongChars;
+    const prevCorrect = this.correctChars;
+
+    if (wrong > prevWrong && typedChars.length > 0) {
+      /* Wrong char */
+      if (window.animations?.triggerWrongChar) animations.triggerWrongChar(null);
+      if (window.animations?.shakeScreen) animations.shakeScreen(3, 180);
+
+      /* Flash wrong key on keyboard */
+      if (window.liveKeyboard && firstWrongIdx >= 0) {
+        window.liveKeyboard.flashWrong(targetChars[firstWrongIdx]);
       }
-      if (window.animations?.shakeScreen) {
-        animations.shakeScreen(4, 200);
-      }
-    } else if (correct > this.correctChars) {
-      if (window.animations?.triggerCorrectChar) {
-        animations.triggerCorrectChar(null);
-      }
+    } else if (correct > prevCorrect) {
+      /* Correct char */
+      if (window.animations?.triggerCorrectChar) animations.triggerCorrectChar(null);
     }
 
     this.correctChars = correct;
     this.wrongChars = wrong;
     this.totalTyped = typedChars.length;
 
-    // Update stats
+    /* WPM + Accuracy */
     const wpm = this.calcWPM();
     const acc = typedChars.length ? Math.round((correct / typedChars.length) * 100) : 100;
 
@@ -443,40 +536,38 @@ class TypingApp {
     this.updateStatDisplay('accuracy', acc);
     this.updateStatDisplay('errors', wrong);
 
+    /* Progress bar */
     const progressBar = document.getElementById('lessonProgress');
     if (progressBar) {
       progressBar.style.width = Math.min(100, (typedChars.length / targetChars.length) * 100) + '%';
     }
 
-    // Update hand position for next char
+    /* Flash pressed key on live keyboard */
+    if (typedChars.length > 0 && window.liveKeyboard) {
+      const lastChar = typedChars[typedChars.length - 1];
+      window.liveKeyboard.flashByChar(lastChar);
+    }
+
+    /* Update hand to next char */
     this.updateHandIndicator();
 
-    // Also flash the pressed key on live keyboard
-    if (typedChars.length > 0 && typeof liveKeyboard !== 'undefined' && liveKeyboard) {
-      const lastChar = typedChars[typedChars.length - 1];
-      liveKeyboard.flashByChar(lastChar);
-    }
-
-    // Combo meter update
+    /* Combo meter */
     if (window.animations?.updateComboMeter) {
-      animations.updateComboMeter(this.getComboCount());
+      animations.updateComboMeter(window._comboCount || 0);
     }
 
-    // Complete?
+    /* Complete? */
     if (typedChars.length >= targetChars.length) {
       this.finishLesson(wpm, acc);
     }
   }
 
-  /* ───── Combo count (animations.js এর সাথে sync) ───── */
-  getComboCount() {
-    // animations.js comboCount global — access via wrapper
-    return window.__comboCount || 0;
-  }
-
-  /* ───── Hand indicator update ───── */
+  /* ═══════════════════════════════════════════════════════
+     HAND INDICATOR UPDATE
+     ═══════════════════════════════════════════════════════ */
   updateHandIndicator() {
     if (!this.currentLesson) return;
+
     const target = this.currentLesson.text;
     const typed = document.getElementById('typeInput')?.value || '';
     const targetChars = Array.from(target);
@@ -488,12 +579,24 @@ class TypingApp {
     }
 
     const nextChar = targetChars[typedLen];
-    if (nextChar && typeof pointHandAtNextChar === 'function') {
-      pointHandAtNextChar(nextChar);
-    }
+    if (!nextChar) return;
+
+    /* ═══ PARMANU: retry if keyboard not ready ═══ */
+    let attempts = 0;
+    const tryPoint = () => {
+      attempts++;
+      if (typeof pointHandAtNextChar === 'function' && window.liveKeyboard) {
+        pointHandAtNextChar(nextChar);
+      } else if (attempts < 5) {
+        setTimeout(tryPoint, 150);
+      }
+    };
+    tryPoint();
   }
 
-  /* ───── WPM ক্যালকুলেশন ───── */
+  /* ═══════════════════════════════════════════════════════
+     WPM CALC
+     ═══════════════════════════════════════════════════════ */
   calcWPM() {
     if (!this.startTime) return 0;
     const minutes = (Date.now() - this.startTime) / 60000;
@@ -501,7 +604,6 @@ class TypingApp {
     return Math.round((this.correctChars / 5) / minutes);
   }
 
-  /* ───── টাইমার ───── */
   startTimer() {
     if (this.timerInterval) clearInterval(this.timerInterval);
     this.timerInterval = setInterval(() => {
@@ -511,21 +613,25 @@ class TypingApp {
       const ss = String(sec % 60).padStart(2, '0');
       this.updateStatDisplay('timer', `${mm}:${ss}`);
 
-      // Update WPM live
+      /* Live WPM */
       const wpm = this.calcWPM();
       this.updateStatDisplay('wpm', wpm);
     }, 500);
   }
 
-  /* ───── লেসন সম্পন্ন ───── */
+  /* ═══════════════════════════════════════════════════════
+     FINISH LESSON
+     ═══════════════════════════════════════════════════════ */
   finishLesson(wpm, accuracy) {
-    if (this.timerInterval) clearInterval(this.timerInterval);
-    this.timerInterval = null;
+    if (this.timerInterval) {
+      clearInterval(this.timerInterval);
+      this.timerInterval = null;
+    }
 
     const input = document.getElementById('typeInput');
     if (input) input.disabled = true;
 
-    // Save progress
+    /* Save */
     this.progress[this.currentLesson.id] = {
       wpm,
       accuracy,
@@ -533,22 +639,24 @@ class TypingApp {
     };
     this.saveProgress();
 
-    // Celebration
+    /* Celebrate */
     if (window.animations?.celebrateLessonComplete) {
       animations.celebrateLessonComplete(wpm, accuracy);
     } else {
       this.showToast(`🎉 সম্পন্ন! ${wpm} WPM, ${accuracy}%`);
     }
 
-    // Refresh dashboard
+    /* Refresh */
     this.loadDashboard();
     this.renderLessons();
 
-    // Clear target hand
+    /* Clear keyboard target */
     if (typeof clearKeyboardTarget === 'function') clearKeyboardTarget();
   }
 
-  /* ───── পুনরায় / পরবর্তী ───── */
+  /* ═══════════════════════════════════════════════════════
+     RESTART / NEXT / BACK
+     ═══════════════════════════════════════════════════════ */
   restartLesson() {
     if (this.currentLesson) this.openLesson(this.currentLesson.id);
   }
@@ -560,7 +668,6 @@ class TypingApp {
     else this.showToast('🎊 সব লেসন সম্পন্ন!');
   }
 
-  /* ───── ডেইলি চ্যালেঞ্জ ───── */
   dailyChallenge() {
     const day = new Date().getDate();
     const idx = Math.min(LESSONS.length - 1, 30 + (day % 30));
@@ -568,9 +675,9 @@ class TypingApp {
     this.showToast('🔥 ডেইলি চ্যালেঞ্জ!');
   }
 
-  /* ═══════════════════════════════════════════════
+  /* ═══════════════════════════════════════════════════════
      DASHBOARD
-     ═══════════════════════════════════════════════ */
+     ═══════════════════════════════════════════════════════ */
   loadDashboard() {
     const vals = Object.values(this.progress);
     const avgWpm = vals.length ? Math.round(vals.reduce((a, b) => a + b.wpm, 0) / vals.length) : 0;
@@ -613,48 +720,123 @@ class TypingApp {
     `).join('');
   }
 
+  /* ═══════════════════════════════════════════════════════
+     CHART — পারমাণবিক (retry + dimensions fix)
+     ═══════════════════════════════════════════════════════ */
   renderChart() {
     const ctx = document.getElementById('progressChart');
-    if (!ctx || typeof Chart === 'undefined') return;
-    if (this.chart) { this.chart.destroy(); this.chart = null; }
+    if (!ctx) {
+      console.warn('⚠️ progressChart canvas not found');
+      return;
+    }
 
+    /* Chart.js লোড হয়েছে কিনা */
+    if (typeof Chart === 'undefined') {
+      if (this.chartRetryCount < 20) {
+        this.chartRetryCount++;
+        setTimeout(() => this.renderChart(), 300);
+      }
+      return;
+    }
+
+    /* ═══ Canvas dimensions fix ═══ */
+    const parent = ctx.parentElement;
+    if (parent) {
+      /* Force parent height for Chart.js */
+      const parentStyle = getComputedStyle(parent);
+      if (parentStyle.height === '0px' || parentStyle.height === 'auto') {
+        parent.style.minHeight = '280px';
+      }
+    }
+
+    /* Explicit height */
+    ctx.style.width = '100%';
+    ctx.style.maxHeight = '320px';
+    ctx.style.height = '280px';
+
+    /* Destroy old */
+    if (this.chart) {
+      try { this.chart.destroy(); } catch (e) {}
+      this.chart = null;
+    }
+
+    /* Data */
     const ids = Object.keys(this.progress).sort((a, b) => a - b);
     const textColor = getComputedStyle(document.body).color;
+    const gridColor = 'rgba(148, 163, 184, 0.15)';
 
-    this.chart = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: ids.map(id => `L${id}`),
-        datasets: [{
-          label: 'WPM',
-          data: ids.map(id => this.progress[id].wpm),
-          borderColor: '#8b5cf6',
-          backgroundColor: 'rgba(139, 92, 246, 0.2)',
-          tension: 0.35,
-          fill: true,
-          pointBackgroundColor: '#6366f1',
-          pointRadius: 4,
-          pointHoverRadius: 7
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { labels: { color: textColor } }
+    const data = ids.length > 0
+      ? ids.map(id => this.progress[id].wpm)
+      : [0];
+    const labels = ids.length > 0
+      ? ids.map(id => `L${id}`)
+      : ['শুরু করুন'];
+
+    try {
+      this.chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'WPM',
+            data: data,
+            borderColor: '#8b5cf6',
+            backgroundColor: 'rgba(139, 92, 246, 0.25)',
+            tension: 0.35,
+            fill: true,
+            pointBackgroundColor: '#6366f1',
+            pointBorderColor: '#fff',
+            pointBorderWidth: 2,
+            pointRadius: ids.length > 0 ? 5 : 0,
+            pointHoverRadius: 8,
+            borderWidth: 3
+          }]
         },
-        scales: {
-          x: { ticks: { color: textColor }, grid: { color: 'rgba(255,255,255,0.05)' } },
-          y: { ticks: { color: textColor }, grid: { color: 'rgba(255,255,255,0.05)' }, beginAtZero: true }
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: { duration: 700, easing: 'easeOutQuart' },
+          plugins: {
+            legend: {
+              labels: {
+                color: textColor,
+                font: { size: 13, weight: '600' }
+              }
+            },
+            tooltip: {
+              backgroundColor: 'rgba(99, 102, 241, 0.95)',
+              titleColor: '#fff',
+              bodyColor: '#fff',
+              padding: 12,
+              borderColor: '#8b5cf6',
+              borderWidth: 1,
+              displayColors: false
+            }
+          },
+          scales: {
+            x: {
+              ticks: { color: textColor, font: { size: 11 } },
+              grid: { color: gridColor }
+            },
+            y: {
+              beginAtZero: true,
+              ticks: { color: textColor, font: { size: 11 } },
+              grid: { color: gridColor }
+            }
+          }
         }
-      }
-    });
+      });
+      console.log('%c📊 Chart rendered', 'color:#10b981;', `(${ids.length} data)`);
+    } catch (err) {
+      console.error('Chart error:', err);
+    }
   }
 
-  /* ═══════════════════════════════════════════════
+  /* ═══════════════════════════════════════════════════════
      STATS PAGE
-     ═══════════════════════════════════════════════ */
+     ═══════════════════════════════════════════════════════ */
   renderStats() {
+    /* Table */
     const table = document.getElementById('historyTable');
     if (table) {
       const rows = Object.entries(this.progress)
@@ -671,57 +853,83 @@ class TypingApp {
       table.innerHTML = rows || '<tr><td colspan="4" class="text-center opacity-50 py-4">কোনো তথ্য নেই</td></tr>';
     }
 
+    /* Chart */
     const ctx = document.getElementById('detailedChart');
-    if (!ctx || typeof Chart === 'undefined') return;
-    if (this.detailedChart) { this.detailedChart.destroy(); this.detailedChart = null; }
+    if (!ctx || typeof Chart === 'undefined') {
+      if (typeof Chart === 'undefined') {
+        setTimeout(() => this.renderStats(), 300);
+      }
+      return;
+    }
+
+    /* Dimensions */
+    ctx.style.width = '100%';
+    ctx.style.maxHeight = '340px';
+    ctx.style.height = '300px';
+
+    if (this.detailedChart) {
+      try { this.detailedChart.destroy(); } catch (e) {}
+      this.detailedChart = null;
+    }
 
     const ids = Object.keys(this.progress);
     const textColor = getComputedStyle(document.body).color;
+    const gridColor = 'rgba(148, 163, 184, 0.15)';
 
-    this.detailedChart = new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels: ids.map(id => `L${id}`),
-        datasets: [
-          {
-            label: 'WPM',
-            data: ids.map(id => this.progress[id].wpm),
-            backgroundColor: 'rgba(99, 102, 241, 0.7)',
-            borderColor: '#6366f1',
-            borderWidth: 2,
-            borderRadius: 6
-          },
-          {
-            label: 'Accuracy %',
-            data: ids.map(id => this.progress[id].accuracy),
-            backgroundColor: 'rgba(16, 185, 129, 0.7)',
-            borderColor: '#10b981',
-            borderWidth: 2,
-            borderRadius: 6
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { labels: { color: textColor } }
+    try {
+      this.detailedChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ids.length ? ids.map(id => `L${id}`) : ['শুরু করুন'],
+          datasets: [
+            {
+              label: 'WPM',
+              data: ids.length ? ids.map(id => this.progress[id].wpm) : [0],
+              backgroundColor: 'rgba(99, 102, 241, 0.8)',
+              borderColor: '#6366f1',
+              borderWidth: 2,
+              borderRadius: 6
+            },
+            {
+              label: 'Accuracy %',
+              data: ids.length ? ids.map(id => this.progress[id].accuracy) : [0],
+              backgroundColor: 'rgba(16, 185, 129, 0.8)',
+              borderColor: '#10b981',
+              borderWidth: 2,
+              borderRadius: 6
+            }
+          ]
         },
-        scales: {
-          x: { ticks: { color: textColor }, grid: { color: 'rgba(255,255,255,0.05)' } },
-          y: { ticks: { color: textColor }, grid: { color: 'rgba(255,255,255,0.05)' }, beginAtZero: true }
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: { duration: 700 },
+          plugins: {
+            legend: {
+              labels: { color: textColor, font: { size: 13, weight: '600' } }
+            }
+          },
+          scales: {
+            x: {
+              ticks: { color: textColor, font: { size: 11 } },
+              grid: { color: gridColor }
+            },
+            y: {
+              beginAtZero: true,
+              ticks: { color: textColor, font: { size: 11 } },
+              grid: { color: gridColor }
+            }
+          }
         }
-      }
-    });
+      });
+    } catch (err) {
+      console.error('Detailed chart error:', err);
+    }
   }
 
-  /* ═══════════════════════════════════════════════
-     EXAM MODE — পরীক্ষা
-     ═══════════════════════════════════════════════ */
-  setupExamInput() {
-    // Handled in startExam
-  }
-
+  /* ═══════════════════════════════════════════════════════
+     EXAM MODE
+     ═══════════════════════════════════════════════════════ */
   startExam(seconds) {
     if (this.examInterval) clearInterval(this.examInterval);
     this.examActive = false;
@@ -729,6 +937,7 @@ class TypingApp {
     const lesson1 = LESSONS[106] || LESSONS[0];
     const lesson2 = LESSONS[107] || LESSONS[1];
     const text = lesson1.text + ' ' + lesson2.text;
+    this.examText = text;
 
     const area = document.getElementById('examArea');
     if (!area) return;
@@ -754,6 +963,7 @@ class TypingApp {
     let t = seconds;
     const start = Date.now();
     this.examActive = true;
+    this.examStartTime = start;
 
     const updateStats = () => {
       const val = inp.value;
@@ -790,7 +1000,7 @@ class TypingApp {
       const stats = updateStats();
       if (window.animations?.sound) animations.sound.keyPress();
       if (stats.typedLen >= stats.targetLen) {
-        this.finishExam(stats.wpm, stats.acc, text, inp);
+        this.finishExam(stats.wpm, stats.acc, inp);
       }
     });
 
@@ -804,12 +1014,12 @@ class TypingApp {
       if (t <= 5 && t > 0 && window.animations?.sound) animations.sound.tick();
       if (t <= 0) {
         const stats = updateStats();
-        this.finishExam(stats.wpm, stats.acc, text, inp);
+        this.finishExam(stats.wpm, stats.acc, inp);
       }
     }, 1000);
   }
 
-  finishExam(wpm, acc, text, inp) {
+  finishExam(wpm, acc, inp) {
     if (!this.examActive) return;
     this.examActive = false;
     if (this.examInterval) clearInterval(this.examInterval);
@@ -832,9 +1042,9 @@ class TypingApp {
     }
   }
 
-  /* ═══════════════════════════════════════════════
-     GAME MODE — গেম
-     ═══════════════════════════════════════════════ */
+  /* ═══════════════════════════════════════════════════════
+     GAME MODE
+     ═══════════════════════════════════════════════════════ */
   setupGameInput() {
     const inp = document.getElementById('gameInput');
     if (!inp) return;
@@ -869,15 +1079,13 @@ class TypingApp {
       inp.focus();
     }
 
-    // Spawn words
+    /* Spawn loop */
     this.gameInterval = setInterval(() => {
       if (!this.gameActive) return;
       this.spawnGameWord();
     }, 1600);
 
-    // Immediately spawn one
     this.spawnGameWord();
-
     this.showToast('🎮 গেম শুরু! শব্দ টাইপ করে Enter চাপুন');
   }
 
@@ -892,8 +1100,7 @@ class TypingApp {
     el.dataset.word = word;
 
     const maxX = Math.max(10, area.clientWidth - 120);
-    const x = Math.random() * maxX;
-    el.style.left = x + 'px';
+    el.style.left = Math.random() * maxX + 'px';
     el.style.top = '-40px';
 
     area.appendChild(el);
@@ -915,7 +1122,7 @@ class TypingApp {
         if (window.animations?.sound) animations.sound.miss();
         if (this.gameLives <= 0) this.stopGame();
       } else {
-        el.style.top = (pct * (area.clientHeight + 40)) + 'px';
+        el.style.top = pct * (area.clientHeight + 40) + 'px';
       }
     }, 50);
 
@@ -968,9 +1175,9 @@ class TypingApp {
     }
   }
 
-  /* ═══════════════════════════════════════════════
+  /* ═══════════════════════════════════════════════════════
      EXPORT / RESET
-     ═══════════════════════════════════════════════ */
+     ═══════════════════════════════════════════════════════ */
   exportProgress() {
     const data = {
       progress: this.progress,
@@ -981,7 +1188,7 @@ class TypingApp {
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `bangla-typing-progress-${Date.now()}.json`;
+    a.download = `bangla-typing-${Date.now()}.json`;
     a.click();
     URL.revokeObjectURL(a.href);
     this.showToast('📥 প্রোগ্রেস ডাউনলোড হয়েছে');
@@ -1002,9 +1209,9 @@ class TypingApp {
     this.showToast('🗑️ প্রোগ্রেস রিসেট হয়েছে');
   }
 
-  /* ═══════════════════════════════════════════════
+  /* ═══════════════════════════════════════════════════════
      TOAST
-     ═══════════════════════════════════════════════ */
+     ═══════════════════════════════════════════════════════ */
   showToast(msg) {
     const el = document.getElementById('toastMsg');
     if (!el) return;
@@ -1017,36 +1224,56 @@ class TypingApp {
 }
 
 
-/* ═══════════════════════════════════════════════════════════
-   COMBO COUNT SYNC — animations.js থেকে
-   ═══════════════════════════════════════════════════════════ */
-
-// animations.js-এ comboCount কে window-এ expose করা
-// (যদি করা না থাকে, override করা):
-Object.defineProperty(window, '__comboCount', {
-  get() {
-    // animations.js এ comboCount private, তাই আমরা _comboCount গ্লোবাল ব্যবহার করি
-    return window._comboCount || 0;
-  }
-});
-
-
-/* ═══════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════════
    INIT ON DOM READY
-   ═══════════════════════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════════════ */
 
-document.addEventListener('DOMContentLoaded', () => {
+function bootTypingApp() {
+  if (window.app) return; /* prevent double init */
+
   window.app = new TypingApp();
-  console.log('%c🚀 বাংলা টাইপিং একাডেমি — READY', 'color: #10b981; font-size: 18px; font-weight: 900; text-shadow: 0 0 10px #10b981;');
-  console.log('%c⚡ বিজয় কীবোর্ড • Unicode • ১১৫ লেসন', 'color: #8b5cf6; font-size: 13px;');
-  console.log('%c💡 কনসোল টেস্ট: app, animations, liveKeyboard', 'color: #f59e0b; font-size: 12px;');
-});
+
+  console.log('%c🚀 বাংলা টাইপিং একাডেমি — READY', 'color:#10b981;font-size:18px;font-weight:900;text-shadow:0 0 10px #10b981;');
+  console.log('%c⚡ বিজয় কীবোর্ড • Unicode • ১১৫ লেসন', 'color:#8b5cf6;font-size:13px;');
+  console.log('%c💡 কনসোল টেস্ট: app, animations, liveKeyboard, debugKeyboard', 'color:#f59e0b;font-size:12px;');
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', bootTypingApp);
+} else {
+  bootTypingApp();
+}
 
 
-/* ═══════════════════════════════════════════════════════════
-   GLOBAL ERROR HANDLER — নিরাপত্তা
-   ═══════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════
+   GLOBAL ERROR HANDLER
+   ═══════════════════════════════════════════════════════════════ */
 
 window.addEventListener('error', (e) => {
-  console.error('⚠️ Error:', e.message, 'at', e.filename + ':' + e.lineno);
+  console.error('⚠️ Global Error:', e.message, 'at', e.filename + ':' + e.lineno);
 });
+
+
+/* ═══════════════════════════════════════════════════════════════
+   STARTUP DIAGNOSTICS — কোন কিছু লোড হয়েছে কিনা
+   ═══════════════════════════════════════════════════════════════ */
+
+setTimeout(() => {
+  const checks = {
+    '✓ Bootstrap': typeof bootstrap !== 'undefined',
+    '✓ Chart.js': typeof Chart !== 'undefined',
+    '✓ LESSONS': typeof LESSONS !== 'undefined' && LESSONS.length > 0,
+    '✓ BIJOY_LAYOUT': typeof BIJOY_LAYOUT !== 'undefined',
+    '✓ App': typeof app !== 'undefined',
+    '✓ Animations': typeof animations !== 'undefined',
+    '✓ Live Keyboard': !!window.liveKeyboard,
+    '✓ progressChart': !!document.getElementById('progressChart'),
+    '✓ liveKbContainer': !!document.getElementById('liveKbContainer')
+  };
+
+  console.group('%c🔍 Startup Diagnostics', 'color:#f59e0b;font-weight:bold;font-size:14px;');
+  Object.entries(checks).forEach(([k, v]) => {
+    console.log(v ? `%c${k} OK` : `%c${k} FAILED`, v ? 'color:#10b981;' : 'color:#ef4444;font-weight:bold;');
+  });
+  console.groupEnd();
+}, 1500);
