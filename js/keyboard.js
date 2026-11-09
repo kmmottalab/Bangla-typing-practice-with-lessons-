@@ -1,7 +1,11 @@
-/* ═══════════════════════════════════════════════════════════
-   বাংলা টাইপিং একাডেমি — KEYBOARD.JS (FIXED v2)
-   লাইভ কীবোর্ড + হ্যান্ড ইন্ডিকেটর — ১০০% কার্যকর
-   ═══════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════
+   বাংলা টাইপিং একাডেমি — KEYBOARD.JS
+   বিজয় ভার্চুয়াল কীবোর্ড + হ্যান্ড ইন্ডিকেটর (পারমাণবিক)
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════
+   BijoyKeyboard Class
+   ═══════════════════════════════════════════════════════ */
 
 class BijoyKeyboard {
   constructor(containerId, options = {}) {
@@ -69,7 +73,7 @@ class BijoyKeyboard {
 
     if (keyData.wide) el.classList.add(keyData.wide);
 
-    // English label
+    /* English label */
     if (this.options.showLabels) {
       const enLabel = document.createElement('span');
       enLabel.className = 'lbl-en';
@@ -87,13 +91,13 @@ class BijoyKeyboard {
       el.appendChild(enLabel);
     }
 
-    // Bengali label
+    /* Bengali label */
     const bnLabel = document.createElement('span');
     bnLabel.className = 'lbl-bn';
     bnLabel.textContent = this.shiftPressed ? keyData.shiftBn : keyData.bn;
     el.appendChild(bnLabel);
 
-    // Click
+    /* Click handlers */
     if (this.options.interactive) {
       const handler = (e) => {
         e.preventDefault();
@@ -148,7 +152,6 @@ class BijoyKeyboard {
   /* ═══════════ CREATE HAND ═══════════ */
   createHand() {
     if (!this.options.showHand || !this.container) return;
-    // Remove existing
     const old = this.container.querySelector('.hand-indicator');
     if (old) old.remove();
 
@@ -160,7 +163,7 @@ class BijoyKeyboard {
     this.handElement = hand;
   }
 
-  /* ═══════════ POINT HAND ═══════════ */
+  /* ═══════════ POINT HAND AT KEY ═══════════ */
   pointHandAtKey(char, shift = false) {
     if (!this.handElement) this.createHand();
     if (!this.handElement) return;
@@ -171,25 +174,20 @@ class BijoyKeyboard {
       return;
     }
 
-    // Clear old target
     if (this.currentTargetKey && this.currentTargetKey !== keyEl) {
       this.currentTargetKey.classList.remove('target');
     }
     keyEl.classList.add('target');
     this.currentTargetKey = keyEl;
 
-    // Container must have position relative
     if (getComputedStyle(this.container).position === 'static') {
       this.container.style.position = 'relative';
     }
 
-    // Calculate position — relative to container
     const containerRect = this.container.getBoundingClientRect();
     const keyRect = keyEl.getBoundingClientRect();
 
-    // If container is hidden (display:none), rect will be 0 — try scroll
     if (containerRect.width === 0) {
-      // Retry after visibility
       setTimeout(() => this.pointHandAtKey(char, shift), 150);
       return;
     }
@@ -202,7 +200,7 @@ class BijoyKeyboard {
     this.handElement.style.opacity = '1';
   }
 
-  /* ═══════════ FIND KEY ═══════════ */
+  /* ═══════════ FIND KEY ELEMENT ═══════════ */
   findKeyElement(char, shift = false) {
     if (!char || !this.container) return null;
     const keys = this.container.querySelectorAll('.kb-key');
@@ -215,7 +213,6 @@ class BijoyKeyboard {
         return el;
       }
     }
-    // Fallback: match by key (for latin)
     if (char.length === 1) {
       const lower = char.toLowerCase();
       for (const el of keys) {
@@ -270,13 +267,10 @@ class BijoyKeyboard {
     });
   }
 
-  /* ═══════════ REFRESH — container আবার দেখানোর পর ═══════════ */
   refresh() {
-    // Re-attach to force reflow
     if (this.container) {
       this.container.style.position = 'relative';
       if (this.handElement && this.currentTargetKey) {
-        // Reposition hand
         const char = this.currentTargetKey.dataset.bn;
         this.pointHandAtKey(char);
       }
@@ -288,22 +282,23 @@ class BijoyKeyboard {
     if (this.container) this.container.innerHTML = '';
     this.handElement = null;
     this.currentTargetKey = null;
+    this.rendered = false;
   }
 }
 
 
-/* ═══════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════
    GLOBAL INSTANCES
-   ═══════════════════════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════ */
 
 window.liveKeyboard = null;
 window.standaloneKeyboard = null;
 window.physicalShiftPressed = false;
 
 
-/* ═══════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════
    INIT LIVE KEYBOARD — টাইপিং পেজ
-   ═══════════════════════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════ */
 
 function initLiveKeyboard() {
   const container = document.getElementById('liveKbContainer');
@@ -312,7 +307,6 @@ function initLiveKeyboard() {
     return;
   }
 
-  // Always re-render fresh
   if (window.liveKeyboard) window.liveKeyboard.destroy();
 
   window.liveKeyboard = new BijoyKeyboard('liveKbContainer', {
@@ -340,7 +334,6 @@ function initLiveKeyboard() {
         input.setSelectionRange(start + char.length, start + char.length);
       }
 
-      // Trigger input event for app to process
       input.dispatchEvent(new Event('input', { bubbles: true }));
       input.focus();
     }
@@ -350,9 +343,9 @@ function initLiveKeyboard() {
 }
 
 
-/* ═══════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════
    INIT STANDALONE KEYBOARD — কীবোর্ড পেজ
-   ═══════════════════════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════ */
 
 function initStandaloneKeyboard() {
   const container = document.getElementById('virtualKeyboard');
@@ -380,14 +373,14 @@ function initStandaloneKeyboard() {
 }
 
 
-/* ═══════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════
    PHYSICAL KEYBOARD LISTENER
-   ═══════════════════════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════ */
 
 function setupGlobalKeyboardListener() {
   document.addEventListener('keydown', (e) => {
     const target = e.target;
-    const isOurInput = ['typeInput', 'kbTestInput', 'gameInput'].includes(target.id);
+    const isOurInput = ['typeInput', 'kbTestInput', 'gameInput', 'examInput'].includes(target.id);
     if (!isOurInput && target.tagName !== 'BODY') return;
 
     if (e.key === 'Shift') {
@@ -412,9 +405,9 @@ function setupGlobalKeyboardListener() {
 }
 
 
-/* ═══════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════
    GLOBAL HELPERS — app.js থেকে কল হবে
-   ═══════════════════════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════ */
 
 function pointHandAtNextChar(char) {
   if (!window.liveKeyboard || !char) return;
@@ -443,23 +436,22 @@ function refreshLiveKeyboard() {
 }
 
 
-/* ═══════════════════════════════════════════════════════════
-   AUTO INIT — DOMContentLoaded
-   ═══════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════
+   AUTO INIT
+   ═══════════════════════════════════════════════════════ */
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Wait a bit for all DOM
   setTimeout(() => {
     initLiveKeyboard();
     initStandaloneKeyboard();
     setupGlobalKeyboardListener();
-  }, 300);
+  }, 400);
 });
 
 
-/* ═══════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════
    DEBUG
-   ═══════════════════════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════ */
 
 window.debugKeyboard = {
   test: () => {
@@ -470,3 +462,5 @@ window.debugKeyboard = {
   reinit: () => { initLiveKeyboard(); initStandaloneKeyboard(); },
   refresh: () => refreshLiveKeyboard()
 };
+
+console.log('%c⌨️ Keyboard.js loaded', 'color:#10b981;font-weight:bold;');
