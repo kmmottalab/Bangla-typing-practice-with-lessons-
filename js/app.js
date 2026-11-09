@@ -1,11 +1,11 @@
 /* ═══════════════════════════════════════════════════════════════
-   বাংলা টাইপিং একাডেমি — APP.JS (PARMANU v3)
-   সম্পূর্ণ নতুন — লাইভ কীবোর্ড + হ্যান্ড + গ্রাফ সব ফিক্সড
+   বাংলা টাইপিং একাডেমি — APP.JS
+   মূল অ্যাপ্লিকেশন লজিক (পারমাণবিক)
    ═══════════════════════════════════════════════════════════════ */
 
 class TypingApp {
   constructor() {
-    /* ───── State ───── */
+    /* ═══ State ═══ */
     this.currentLesson = null;
     this.currentIndex = 0;
     this.startTime = null;
@@ -17,17 +17,18 @@ class TypingApp {
     this.searchQuery = '';
     this.lastWrongChar = null;
 
-    /* ───── Storage ───── */
+    /* ═══ Storage ═══ */
     this.progress = this.loadProgress();
     this.streak = this.loadStreak();
     this.settings = this.loadSettings();
 
-    /* ───── Charts ───── */
+    /* ═══ Charts ═══ */
     this.chart = null;
     this.detailedChart = null;
+    this.weeklyChart = null;
     this.chartRetryCount = 0;
 
-    /* ───── Game ───── */
+    /* ═══ Game ═══ */
     this.gameActive = false;
     this.gameScore = 0;
     this.gameLives = 3;
@@ -35,7 +36,7 @@ class TypingApp {
     this.gameAnimIntervals = [];
     this.gameFallingWords = [];
 
-    /* ───── Exam ───── */
+    /* ═══ Exam ═══ */
     this.examInterval = null;
     this.examActive = false;
     this.examText = '';
@@ -55,7 +56,7 @@ class TypingApp {
     this.setupSearch();
     this.updateStreak();
 
-    /* ═══ পারমাণবিক init sequence — সব ফিক্স ═══ */
+    /* ═══ Boot sequence ═══ */
     const bootApp = () => {
       try {
         this.renderLessons();
@@ -67,29 +68,21 @@ class TypingApp {
       }
     };
 
-    /* DOM settle হওয়ার পর কল */
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', () => setTimeout(bootApp, 200));
     } else {
       setTimeout(bootApp, 200);
     }
 
-    /* Chart + Keyboard force init */
+    /* Force chart render */
     setTimeout(() => {
       this.renderChart();
-
-      /* ═══ LIVE KEYBOARD — টাইপিং পেজে থাকলে reinit ═══ */
       if (document.getElementById('page-typing').classList.contains('active')) {
         if (typeof initLiveKeyboard === 'function') initLiveKeyboard();
       }
-
-      /* ═══ STANDALONE KEYBOARD ═══ */
-      if (document.getElementById('page-keyboard').classList.contains('active')) {
-        if (typeof initStandaloneKeyboard === 'function') initStandaloneKeyboard();
-      }
     }, 800);
 
-    /* Window resize — keyboard reposition */
+    /* Window resize */
     window.addEventListener('resize', () => {
       if (this.currentPage === 'typing' && this.currentLesson) {
         setTimeout(() => this.updateHandIndicator(), 200);
@@ -111,17 +104,14 @@ class TypingApp {
 
   showPage(name) {
     try {
-      /* Hide all, show target */
       document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
       const page = document.getElementById('page-' + name);
       if (page) page.classList.add('active');
 
-      /* Nav active */
       document.querySelectorAll('.nav-btn[data-tab]').forEach(b => {
         b.classList.toggle('active', b.dataset.tab === name);
       });
 
-      /* Mobile nav close */
       const nav = document.getElementById('navMenu');
       if (nav && nav.classList.contains('show')) {
         const collapse = bootstrap.Collapse.getInstance(nav);
@@ -131,7 +121,6 @@ class TypingApp {
 
       this.currentPage = name;
 
-      /* ═══ PAGE-SPECIFIC REFRESH (RAF + setTimeout for DOM) ═══ */
       requestAnimationFrame(() => {
         setTimeout(() => {
           try {
@@ -150,11 +139,9 @@ class TypingApp {
             }
 
             if (name === 'typing') {
-              /* ═══ LIVE KEYBOARD PARMANU REFRESH ═══ */
               if (typeof initLiveKeyboard === 'function') {
                 initLiveKeyboard();
               }
-              /* Hand position re-calc after visible */
               setTimeout(() => {
                 if (typeof refreshLiveKeyboard === 'function') {
                   refreshLiveKeyboard();
@@ -180,12 +167,9 @@ class TypingApp {
   setupThemeToggle() {
     const btn = document.getElementById('themeBtn');
     if (!btn) return;
-
-    /* Restore saved theme */
     if (this.settings.theme) {
       document.documentElement.setAttribute('data-theme', this.settings.theme);
     }
-
     btn.addEventListener('click', () => this.toggleTheme());
   }
 
@@ -196,7 +180,6 @@ class TypingApp {
     this.settings.theme = next;
     this.saveSettings();
 
-    /* Refresh charts */
     setTimeout(() => {
       if (this.currentPage === 'dashboard') this.renderChart();
       if (this.currentPage === 'stats') this.renderStats();
@@ -266,13 +249,12 @@ class TypingApp {
   }
 
   /* ═══════════════════════════════════════════════════════
-     LESSONS RENDERING — গ্রুপ অনুযায়ী
+     LESSONS RENDERING
      ═══════════════════════════════════════════════════════ */
   renderLessons() {
     const grid = document.getElementById('lessonsGrid');
     if (!grid) return;
 
-    /* Filter */
     let lessons = LESSONS;
     if (this.searchQuery) {
       lessons = lessons.filter(l =>
@@ -281,7 +263,6 @@ class TypingApp {
       );
     }
 
-    /* Count badge */
     const count = document.getElementById('lessonCount');
     if (count) count.textContent = lessons.length;
 
@@ -290,7 +271,6 @@ class TypingApp {
       return;
     }
 
-    /* Group by group */
     const grouped = {};
     lessons.forEach(l => {
       const g = l.group || 'other';
@@ -298,7 +278,6 @@ class TypingApp {
       grouped[g].push(l);
     });
 
-    /* Render groups in order */
     const groupOrder = ['bottom-row', 'top-row', 'special', 'shift', 'swaroborno', 'numbers', 'juktakkhor', 'bakyo', 'other'];
     let html = '';
 
@@ -340,27 +319,24 @@ class TypingApp {
 
     grid.innerHTML = html;
 
-    /* Attach click handlers */
     grid.querySelectorAll('.lesson-card').forEach(card => {
       card.addEventListener('click', () => {
         this.openLesson(parseInt(card.dataset.id));
       });
     });
 
-    /* Entry animation */
     if (window.animations?.staggerIn) {
       animations.staggerIn(grid, '.lesson-card', 15);
     }
   }
 
   /* ═══════════════════════════════════════════════════════
-     OPEN LESSON — পারমাণবিক
+     OPEN LESSON
      ═══════════════════════════════════════════════════════ */
   openLesson(id) {
     const lesson = LESSONS.find(l => l.id === id);
     if (!lesson) return;
 
-    /* Reset state */
     this.currentLesson = lesson;
     this.currentIndex = 0;
     this.startTime = null;
@@ -375,11 +351,9 @@ class TypingApp {
     }
     if (window.animations?.resetCombo) animations.resetCombo();
 
-    /* Title */
     const titleEl = document.getElementById('lessonTitle');
     if (titleEl) titleEl.textContent = `${id}. ${lesson.title}`;
 
-    /* Input reset */
     const input = document.getElementById('typeInput');
     if (input) {
       input.value = '';
@@ -387,39 +361,27 @@ class TypingApp {
       input.setAttribute('data-expected', lesson.text);
     }
 
-    /* Stats reset */
     this.updateStatDisplay('timer', '0:00');
     this.updateStatDisplay('wpm', '0');
     this.updateStatDisplay('accuracy', '100');
     this.updateStatDisplay('errors', '0');
 
-    /* Progress bar reset */
     const progressBar = document.getElementById('lessonProgress');
     if (progressBar) progressBar.style.width = '0%';
 
-    /* Render text */
     this.renderTextDisplay();
-
-    /* Switch page */
     this.showPage('typing');
 
-    /* ═══ LIVE KEYBOARD + HAND PARMANU SETUP ═══ */
     setTimeout(() => {
-      /* 1. Reinit keyboard (guarantee container visible) */
       if (typeof initLiveKeyboard === 'function') {
         initLiveKeyboard();
       }
 
-      /* 2. Highlight lesson keys */
       setTimeout(() => {
         if (typeof highlightLessonKeysOnKeyboard === 'function') {
           highlightLessonKeysOnKeyboard(lesson.keys || []);
         }
-
-        /* 3. Point hand at first char */
         this.updateHandIndicator();
-
-        /* 4. Focus input */
         input?.focus();
       }, 200);
     }, 350);
@@ -455,7 +417,7 @@ class TypingApp {
   }
 
   /* ═══════════════════════════════════════════════════════
-     TYPING INPUT — Unicode सঠিকভাবে
+     TYPING INPUT
      ═══════════════════════════════════════════════════════ */
   setupTypingInput() {
     const input = document.getElementById('typeInput');
@@ -474,13 +436,11 @@ class TypingApp {
     const targetChars = Array.from(target);
     const typedChars = Array.from(val);
 
-    /* Start timer on first char */
     if (!this.startTime && typedChars.length > 0) {
       this.startTime = Date.now();
       this.startTimer();
     }
 
-    /* Count correct/wrong */
     let correct = 0;
     let wrong = 0;
     let firstWrongIdx = -1;
@@ -506,21 +466,16 @@ class TypingApp {
       }).join('');
     }
 
-    /* Sound + effects */
     const prevWrong = this.wrongChars;
     const prevCorrect = this.correctChars;
 
     if (wrong > prevWrong && typedChars.length > 0) {
-      /* Wrong char */
       if (window.animations?.triggerWrongChar) animations.triggerWrongChar(null);
       if (window.animations?.shakeScreen) animations.shakeScreen(3, 180);
-
-      /* Flash wrong key on keyboard */
       if (window.liveKeyboard && firstWrongIdx >= 0) {
         window.liveKeyboard.flashWrong(targetChars[firstWrongIdx]);
       }
     } else if (correct > prevCorrect) {
-      /* Correct char */
       if (window.animations?.triggerCorrectChar) animations.triggerCorrectChar(null);
     }
 
@@ -528,7 +483,6 @@ class TypingApp {
     this.wrongChars = wrong;
     this.totalTyped = typedChars.length;
 
-    /* WPM + Accuracy */
     const wpm = this.calcWPM();
     const acc = typedChars.length ? Math.round((correct / typedChars.length) * 100) : 100;
 
@@ -536,34 +490,29 @@ class TypingApp {
     this.updateStatDisplay('accuracy', acc);
     this.updateStatDisplay('errors', wrong);
 
-    /* Progress bar */
     const progressBar = document.getElementById('lessonProgress');
     if (progressBar) {
       progressBar.style.width = Math.min(100, (typedChars.length / targetChars.length) * 100) + '%';
     }
 
-    /* Flash pressed key on live keyboard */
     if (typedChars.length > 0 && window.liveKeyboard) {
       const lastChar = typedChars[typedChars.length - 1];
       window.liveKeyboard.flashByChar(lastChar);
     }
 
-    /* Update hand to next char */
     this.updateHandIndicator();
 
-    /* Combo meter */
     if (window.animations?.updateComboMeter) {
       animations.updateComboMeter(window._comboCount || 0);
     }
 
-    /* Complete? */
     if (typedChars.length >= targetChars.length) {
       this.finishLesson(wpm, acc);
     }
   }
 
   /* ═══════════════════════════════════════════════════════
-     HAND INDICATOR UPDATE
+     HAND INDICATOR
      ═══════════════════════════════════════════════════════ */
   updateHandIndicator() {
     if (!this.currentLesson) return;
@@ -581,7 +530,6 @@ class TypingApp {
     const nextChar = targetChars[typedLen];
     if (!nextChar) return;
 
-    /* ═══ PARMANU: retry if keyboard not ready ═══ */
     let attempts = 0;
     const tryPoint = () => {
       attempts++;
@@ -595,7 +543,7 @@ class TypingApp {
   }
 
   /* ═══════════════════════════════════════════════════════
-     WPM CALC
+     WPM / TIMER
      ═══════════════════════════════════════════════════════ */
   calcWPM() {
     if (!this.startTime) return 0;
@@ -612,8 +560,6 @@ class TypingApp {
       const mm = Math.floor(sec / 60);
       const ss = String(sec % 60).padStart(2, '0');
       this.updateStatDisplay('timer', `${mm}:${ss}`);
-
-      /* Live WPM */
       const wpm = this.calcWPM();
       this.updateStatDisplay('wpm', wpm);
     }, 500);
@@ -631,7 +577,6 @@ class TypingApp {
     const input = document.getElementById('typeInput');
     if (input) input.disabled = true;
 
-    /* Save */
     this.progress[this.currentLesson.id] = {
       wpm,
       accuracy,
@@ -639,23 +584,20 @@ class TypingApp {
     };
     this.saveProgress();
 
-    /* Celebrate */
     if (window.animations?.celebrateLessonComplete) {
       animations.celebrateLessonComplete(wpm, accuracy);
     } else {
       this.showToast(`🎉 সম্পন্ন! ${wpm} WPM, ${accuracy}%`);
     }
 
-    /* Refresh */
     this.loadDashboard();
     this.renderLessons();
 
-    /* Clear keyboard target */
     if (typeof clearKeyboardTarget === 'function') clearKeyboardTarget();
   }
 
   /* ═══════════════════════════════════════════════════════
-     RESTART / NEXT / BACK
+     NAVIGATION SHORTCUTS
      ═══════════════════════════════════════════════════════ */
   restartLesson() {
     if (this.currentLesson) this.openLesson(this.currentLesson.id);
@@ -675,24 +617,149 @@ class TypingApp {
     this.showToast('🔥 ডেইলি চ্যালেঞ্জ!');
   }
 
+  nextTip() {
+    const tips = [
+      'প্রতিদিন ১৫ মিনিট অনুশীলন করুন।',
+      'ধীরে শুরু করুন, গতি নিজে থেকেই আসবে।',
+      'আঙুলের সঠিক অবস্থান মনে রাখুন।',
+      'ভুল হলে থামবেন না, চালিয়ে যান।',
+      'প্রতিদিন একই সময়ে অনুশীলন করুন।',
+      'যুক্তাক্ষর আলাদাভাবে অনুশীলন করুন।',
+      'আগের লেসন ৯৫%+ নির্ভুলতায় শেষ করুন।',
+      'মাঝে মাঝে চোখকে বিশ্রাম দিন।',
+      'য়, ড়, ঢ় — এগুলোতে মনোযোগ দিন।',
+      'সপ্তাহে একবার গতি পরীক্ষা করুন।'
+    ];
+    const el = document.getElementById('dailyTip');
+    if (!el) return;
+    el.style.opacity = '0';
+    setTimeout(() => {
+      el.textContent = tips[Math.floor(Math.random() * tips.length)];
+      el.style.opacity = '1';
+    }, 200);
+  }
+
   /* ═══════════════════════════════════════════════════════
      DASHBOARD
      ═══════════════════════════════════════════════════════ */
   loadDashboard() {
-    const vals = Object.values(this.progress);
-    const avgWpm = vals.length ? Math.round(vals.reduce((a, b) => a + b.wpm, 0) / vals.length) : 0;
-    const avgAcc = vals.length ? Math.round(vals.reduce((a, b) => a + b.accuracy, 0) / vals.length) : 0;
+    try {
+      const vals = Object.values(this.progress);
+      const totalLessons = LESSONS.length;
+      const completedCount = vals.length;
 
-    this.updateStatDisplay('statWPM', avgWpm);
-    this.updateStatDisplay('statAccuracy', avgAcc + '%');
-    this.updateStatDisplay('statCompleted', `${vals.length}/${LESSONS.length}`);
-    this.updateStatDisplay('statStreak', this.streak.days);
+      const avgWpm = vals.length
+        ? Math.round(vals.reduce((a, b) => a + b.wpm, 0) / vals.length)
+        : 0;
+      const avgAcc = vals.length
+        ? Math.round(vals.reduce((a, b) => a + b.accuracy, 0) / vals.length)
+        : 0;
 
-    this.renderBadges(vals.length, avgWpm);
-    this.renderChart();
+      this.animateStatValue('statWPM', avgWpm);
+      const accEl = document.getElementById('statAccuracy');
+      if (accEl) accEl.textContent = avgAcc + '%';
+      const compEl = document.getElementById('statCompleted');
+      if (compEl) compEl.textContent = `${completedCount}/${totalLessons}`;
+      const streakEl = document.getElementById('statStreak');
+      if (streakEl) streakEl.textContent = this.streak.days;
 
-    if (window.animations?.updateStreakFlame) {
-      animations.updateStreakFlame(this.streak.days);
+      this.renderTrends(vals);
+
+      const bar = document.getElementById('completedProgress');
+      if (bar) {
+        const pct = totalLessons > 0 ? (completedCount / totalLessons) * 100 : 0;
+        bar.style.width = pct + '%';
+      }
+
+      this.renderBadges(completedCount, avgWpm);
+      this.renderTopLessons(vals);
+      this.renderRecentLessons(vals);
+      this.renderChart();
+      setTimeout(() => this.renderWeeklyChart(), 100);
+      this.renderDailyTip();
+
+      if (window.animations?.updateStreakFlame) {
+        animations.updateStreakFlame(this.streak.days);
+      }
+    } catch (err) {
+      console.error('Dashboard error:', err);
+    }
+  }
+
+  animateStatValue(id, to) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const from = parseInt(el.dataset.value || el.textContent) || 0;
+    el.dataset.value = to;
+    if (window.animations?.animateNumber) {
+      animations.animateNumber(el, from, to, 800);
+    } else {
+      el.textContent = to;
+    }
+  }
+
+  renderTrends(vals) {
+    const wpmTrend = document.getElementById('wpmTrend');
+    if (wpmTrend) {
+      if (vals.length >= 2) {
+        const sorted = [...vals].sort((a, b) => new Date(a.date) - new Date(b.date));
+        const last = sorted[sorted.length - 1].wpm;
+        const prev = sorted[sorted.length - 2].wpm;
+        const diff = last - prev;
+        if (diff > 0) {
+          wpmTrend.textContent = `▲ ${diff} উন্নতি`;
+          wpmTrend.className = 'stat-trend up';
+        } else if (diff < 0) {
+          wpmTrend.textContent = `▼ ${Math.abs(diff)} কম`;
+          wpmTrend.className = 'stat-trend down';
+        } else {
+          wpmTrend.textContent = '— অপরিবর্তিত';
+          wpmTrend.className = 'stat-trend';
+        }
+      } else {
+        wpmTrend.textContent = 'শুরু করুন';
+        wpmTrend.className = 'stat-trend';
+      }
+    }
+
+    const accTrend = document.getElementById('accTrend');
+    if (accTrend) {
+      if (vals.length >= 2) {
+        const sorted = [...vals].sort((a, b) => new Date(a.date) - new Date(b.date));
+        const last = sorted[sorted.length - 1].accuracy;
+        const prev = sorted[sorted.length - 2].accuracy;
+        const diff = last - prev;
+        if (diff > 0) {
+          accTrend.textContent = `▲ ${diff}% উন্নতি`;
+          accTrend.className = 'stat-trend up';
+        } else if (diff < 0) {
+          accTrend.textContent = `▼ ${Math.abs(diff)}% কম`;
+          accTrend.className = 'stat-trend down';
+        } else {
+          accTrend.textContent = '— অপরিবর্তিত';
+          accTrend.className = 'stat-trend';
+        }
+      } else {
+        accTrend.textContent = 'শুরু করুন';
+        accTrend.className = 'stat-trend';
+      }
+    }
+
+    const streakTrend = document.getElementById('streakTrend');
+    if (streakTrend) {
+      if (this.streak.days >= 7) {
+        streakTrend.textContent = '🔥 এক সপ্তাহ!';
+        streakTrend.className = 'stat-trend up';
+      } else if (this.streak.days >= 3) {
+        streakTrend.textContent = '🔥 ভালো চলছে';
+        streakTrend.className = 'stat-trend up';
+      } else if (this.streak.days >= 1) {
+        streakTrend.textContent = '💪 শুরু হয়েছে';
+        streakTrend.className = 'stat-trend';
+      } else {
+        streakTrend.textContent = 'শুরু করুন';
+        streakTrend.className = 'stat-trend';
+      }
     }
   }
 
@@ -701,36 +768,115 @@ class TypingApp {
     if (!area) return;
 
     const badges = [
-      { icon: 'bi-1-circle', name: 'প্রথম', earned: count >= 1 },
-      { icon: 'bi-5-circle', name: '৫টি', earned: count >= 5 },
-      { icon: 'bi-2-circle', name: '১০টি', earned: count >= 10 },
-      { icon: 'bi-3-circle', name: '২৫টি', earned: count >= 25 },
-      { icon: 'bi-trophy', name: '৫০টি', earned: count >= 50 },
-      { icon: 'bi-award', name: '১০০টি', earned: count >= 100 },
-      { icon: 'bi-lightning', name: '২০ WPM', earned: wpm >= 20 },
-      { icon: 'bi-fire', name: '৪০ WPM', earned: wpm >= 40 },
-      { icon: 'bi-star', name: '৬০ WPM', earned: wpm >= 60 }
+      { icon: 'bi-1-circle', name: 'প্রথম', earned: count >= 1, tip: '১টি লেসন' },
+      { icon: 'bi-5-circle', name: '৫টি', earned: count >= 5, tip: '৫টি লেসন' },
+      { icon: 'bi-2-circle', name: '১০টি', earned: count >= 10, tip: '১০টি লেসন' },
+      { icon: 'bi-3-circle', name: '২৫টি', earned: count >= 25, tip: '২৫টি লেসন' },
+      { icon: 'bi-4-circle', name: '৫০টি', earned: count >= 50, tip: '৫০টি লেসন' },
+      { icon: 'bi-trophy', name: '১০০টি', earned: count >= 100, tip: '১০০টি লেসন' },
+      { icon: 'bi-award', name: 'সব', earned: count >= LESSONS.length, tip: 'সব লেসন' },
+      { icon: 'bi-lightning', name: '২০ WPM', earned: wpm >= 20, tip: '২০ WPM' },
+      { icon: 'bi-fire', name: '৪০ WPM', earned: wpm >= 40, tip: '৪০ WPM' },
+      { icon: 'bi-star', name: '৬০ WPM', earned: wpm >= 60, tip: '৬০ WPM' },
+      { icon: 'bi-rocket', name: '৮০ WPM', earned: wpm >= 80, tip: '৮০ WPM' },
+      { icon: 'bi-crown', name: '১০০ WPM', earned: wpm >= 100, tip: '১০০ WPM' }
     ];
 
+    const unlocked = badges.filter(b => b.earned).length;
+    const badgeCountEl = document.getElementById('badgeCount');
+    if (badgeCountEl) badgeCountEl.textContent = `${unlocked}/${badges.length}`;
+
     area.innerHTML = badges.map(b => `
-      <div class="badge-item" style="opacity:${b.earned ? 1 : 0.3};">
+      <div class="badge-item ${b.earned ? 'unlocked' : 'locked'}" title="${b.tip}">
         <i class="bi ${b.icon}"></i>
         <small>${b.name}</small>
       </div>
     `).join('');
   }
 
-  /* ═══════════════════════════════════════════════════════
-     CHART — পারমাণবিক (retry + dimensions fix)
-     ═══════════════════════════════════════════════════════ */
-  renderChart() {
-    const ctx = document.getElementById('progressChart');
-    if (!ctx) {
-      console.warn('⚠️ progressChart canvas not found');
+  renderTopLessons(vals) {
+    const container = document.getElementById('topLessons');
+    if (!container) return;
+
+    if (!vals.length) {
+      container.innerHTML = '<div class="text-center opacity-50 py-4">এখনো কোনো লেসন সম্পন্ন হয়নি</div>';
       return;
     }
 
-    /* Chart.js লোড হয়েছে কিনা */
+    const sorted = Object.entries(this.progress)
+      .sort(([, a], [, b]) => b.wpm - a.wpm)
+      .slice(0, 5);
+
+    container.innerHTML = sorted.map(([id, p], idx) => {
+      const l = LESSONS.find(x => x.id == id);
+      return `
+        <div class="top-lesson-row">
+          <div class="top-lesson-rank">${idx + 1}</div>
+          <div class="top-lesson-info">
+            <div class="top-lesson-title">${l ? l.title : 'লেসন ' + id}</div>
+            <div class="top-lesson-stat">${p.accuracy}% নির্ভুলতা</div>
+          </div>
+          <div class="top-lesson-score">${p.wpm} <small>WPM</small></div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  renderRecentLessons(vals) {
+    const container = document.getElementById('recentLessons');
+    if (!container) return;
+
+    if (!vals.length) {
+      container.innerHTML = '<div class="text-center opacity-50 py-4">এখনো কোনো লেসন সম্পন্ন হয়নি</div>';
+      return;
+    }
+
+    const recent = Object.entries(this.progress)
+      .sort(([, a], [, b]) => new Date(b.date) - new Date(a.date))
+      .slice(0, 5);
+
+    container.innerHTML = recent.map(([id, p]) => {
+      const l = LESSONS.find(x => x.id == id);
+      return `
+        <div class="recent-lesson-row" onclick="app.openLesson(${id})">
+          <div class="recent-lesson-icon">✓</div>
+          <div class="recent-lesson-info">
+            <div class="recent-lesson-title">${l ? l.title : 'লেসন ' + id}</div>
+            <div class="recent-lesson-meta">${p.wpm} WPM • ${p.accuracy}% • ${new Date(p.date).toLocaleDateString('bn-BD')}</div>
+          </div>
+          <i class="bi bi-chevron-right opacity-50"></i>
+        </div>
+      `;
+    }).join('');
+  }
+
+  renderDailyTip() {
+    const tips = [
+      'প্রতিদিন ১৫ মিনিট অনুশীলন করুন — ধারাবাহিকতাই সবচেয়ে গুরুত্বপূর্ণ।',
+      'ধীরে শুরু করুন, গতি নিজে থেকেই আসবে। নির্ভুলতাকে অগ্রাধিকার দিন।',
+      'আঙুলের সঠিক অবস্থান মনে রাখুন — হোম সারিতে থাকুন।',
+      'ভুল হলে থামবেন না, চালিয়ে যান। শেষে ভুলের ধরন বিশ্লেষণ করুন।',
+      'প্রতিদিন একই সময়ে অনুশীলন করুন — অভ্যাস তৈরি হবে।',
+      'বাংলা যুক্তাক্ষরগুলো আলাদাভাবে অনুশীলন করুন।',
+      'নতুন লেসনে যাওয়ার আগে আগেরটি ৯৫%+ নির্ভুলতায় সম্পন্ন করুন।',
+      'স্ক্রিন থেকে দূরে তাকিয়ে মাঝে মাঝে চোখকে বিশ্রাম দিন।',
+      'য়, ড়, ঢ় — এই তিন শূন্য-বর্ণে বিশেষ মনোযোগ দিন।',
+      'সপ্তাহে একবার নিজের গতি পরীক্ষা করুন — উন্নতি দেখুন।'
+    ];
+    const el = document.getElementById('dailyTip');
+    if (el) {
+      const idx = new Date().getDate() % tips.length;
+      el.textContent = tips[idx];
+    }
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     CHARTS
+     ═══════════════════════════════════════════════════════ */
+  renderChart() {
+    const ctx = document.getElementById('progressChart');
+    if (!ctx) return;
+
     if (typeof Chart === 'undefined') {
       if (this.chartRetryCount < 20) {
         this.chartRetryCount++;
@@ -739,38 +885,17 @@ class TypingApp {
       return;
     }
 
-    /* ═══ Canvas dimensions fix ═══ */
-    const parent = ctx.parentElement;
-    if (parent) {
-      /* Force parent height for Chart.js */
-      const parentStyle = getComputedStyle(parent);
-      if (parentStyle.height === '0px' || parentStyle.height === 'auto') {
-        parent.style.minHeight = '280px';
-      }
-    }
-
-    /* Explicit height */
-    ctx.style.width = '100%';
-    ctx.style.maxHeight = '320px';
-    ctx.style.height = '280px';
-
-    /* Destroy old */
     if (this.chart) {
       try { this.chart.destroy(); } catch (e) {}
       this.chart = null;
     }
 
-    /* Data */
     const ids = Object.keys(this.progress).sort((a, b) => a - b);
     const textColor = getComputedStyle(document.body).color;
     const gridColor = 'rgba(148, 163, 184, 0.15)';
 
-    const data = ids.length > 0
-      ? ids.map(id => this.progress[id].wpm)
-      : [0];
-    const labels = ids.length > 0
-      ? ids.map(id => `L${id}`)
-      : ['শুরু করুন'];
+    const data = ids.length > 0 ? ids.map(id => this.progress[id].wpm) : [0];
+    const labels = ids.length > 0 ? ids.map(id => `L${id}`) : ['শুরু করুন'];
 
     try {
       this.chart = new Chart(ctx, {
@@ -798,45 +923,92 @@ class TypingApp {
           animation: { duration: 700, easing: 'easeOutQuart' },
           plugins: {
             legend: {
-              labels: {
-                color: textColor,
-                font: { size: 13, weight: '600' }
-              }
+              labels: { color: textColor, font: { size: 13, weight: '600' } }
             },
             tooltip: {
               backgroundColor: 'rgba(99, 102, 241, 0.95)',
               titleColor: '#fff',
               bodyColor: '#fff',
               padding: 12,
-              borderColor: '#8b5cf6',
-              borderWidth: 1,
               displayColors: false
             }
           },
           scales: {
-            x: {
-              ticks: { color: textColor, font: { size: 11 } },
-              grid: { color: gridColor }
-            },
-            y: {
-              beginAtZero: true,
-              ticks: { color: textColor, font: { size: 11 } },
-              grid: { color: gridColor }
-            }
+            x: { ticks: { color: textColor, font: { size: 11 } }, grid: { color: gridColor } },
+            y: { beginAtZero: true, ticks: { color: textColor, font: { size: 11 } }, grid: { color: gridColor } }
           }
         }
       });
-      console.log('%c📊 Chart rendered', 'color:#10b981;', `(${ids.length} data)`);
     } catch (err) {
       console.error('Chart error:', err);
     }
   }
 
-  /* ═══════════════════════════════════════════════════════
-     STATS PAGE
-     ═══════════════════════════════════════════════════════ */
+  renderWeeklyChart() {
+    const ctx = document.getElementById('weeklyChart');
+    if (!ctx || typeof Chart === 'undefined') return;
+
+    if (this.weeklyChart) {
+      try { this.weeklyChart.destroy(); } catch (e) {}
+      this.weeklyChart = null;
+    }
+
+    const days = ['শনি', 'রবি', 'সোম', 'মঙ্গল', 'বুধ', 'বৃহঃ', 'শুক্র'];
+    const counts = [0, 0, 0, 0, 0, 0, 0];
+    const now = Date.now();
+
+    Object.values(this.progress).forEach(p => {
+      const daysAgo = Math.floor((now - new Date(p.date).getTime()) / 86400000);
+      if (daysAgo >= 0 && daysAgo < 7) {
+        const idx = 6 - daysAgo;
+        if (idx >= 0 && idx < 7) counts[idx]++;
+      }
+    });
+
+    const textColor = getComputedStyle(document.body).color;
+    const gridColor = 'rgba(148, 163, 184, 0.15)';
+
+    try {
+      this.weeklyChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: days,
+          datasets: [{
+            label: 'লেসন',
+            data: counts,
+            backgroundColor: 'rgba(6, 182, 212, 0.7)',
+            borderColor: '#06b6d4',
+            borderWidth: 2,
+            borderRadius: 8
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: { duration: 800 },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: 'rgba(6, 182, 212, 0.95)',
+              displayColors: false
+            }
+          },
+          scales: {
+            x: { ticks: { color: textColor, font: { size: 11 } }, grid: { display: false } },
+            y: {
+              beginAtZero: true,
+              ticks: { color: textColor, stepSize: 1, font: { size: 11 } },
+              grid: { color: gridColor }
+            }
+          }
+        }
+      });
+    } catch (err) {
+      console.error('Weekly chart error:', err);
+    }
+  }
+
   renderStats() {
-    /* Table */
     const table = document.getElementById('historyTable');
     if (table) {
       const rows = Object.entries(this.progress)
@@ -853,7 +1025,6 @@ class TypingApp {
       table.innerHTML = rows || '<tr><td colspan="4" class="text-center opacity-50 py-4">কোনো তথ্য নেই</td></tr>';
     }
 
-    /* Chart */
     const ctx = document.getElementById('detailedChart');
     if (!ctx || typeof Chart === 'undefined') {
       if (typeof Chart === 'undefined') {
@@ -861,11 +1032,6 @@ class TypingApp {
       }
       return;
     }
-
-    /* Dimensions */
-    ctx.style.width = '100%';
-    ctx.style.maxHeight = '340px';
-    ctx.style.height = '300px';
 
     if (this.detailedChart) {
       try { this.detailedChart.destroy(); } catch (e) {}
@@ -910,15 +1076,8 @@ class TypingApp {
             }
           },
           scales: {
-            x: {
-              ticks: { color: textColor, font: { size: 11 } },
-              grid: { color: gridColor }
-            },
-            y: {
-              beginAtZero: true,
-              ticks: { color: textColor, font: { size: 11 } },
-              grid: { color: gridColor }
-            }
+            x: { ticks: { color: textColor, font: { size: 11 } }, grid: { color: gridColor } },
+            y: { beginAtZero: true, ticks: { color: textColor, font: { size: 11 } }, grid: { color: gridColor } }
           }
         }
       });
@@ -934,8 +1093,8 @@ class TypingApp {
     if (this.examInterval) clearInterval(this.examInterval);
     this.examActive = false;
 
-    const lesson1 = LESSONS[106] || LESSONS[0];
-    const lesson2 = LESSONS[107] || LESSONS[1];
+    const lesson1 = LESSONS[105] || LESSONS[0];
+    const lesson2 = LESSONS[106] || LESSONS[1];
     const text = lesson1.text + ' ' + lesson2.text;
     this.examText = text;
 
@@ -1079,7 +1238,6 @@ class TypingApp {
       inp.focus();
     }
 
-    /* Spawn loop */
     this.gameInterval = setInterval(() => {
       if (!this.gameActive) return;
       this.spawnGameWord();
@@ -1225,12 +1383,11 @@ class TypingApp {
 
 
 /* ═══════════════════════════════════════════════════════════════
-   INIT ON DOM READY
+   INIT
    ═══════════════════════════════════════════════════════════════ */
 
 function bootTypingApp() {
-  if (window.app) return; /* prevent double init */
-
+  if (window.app) return;
   window.app = new TypingApp();
 
   console.log('%c🚀 বাংলা টাইপিং একাডেমি — READY', 'color:#10b981;font-size:18px;font-weight:900;text-shadow:0 0 10px #10b981;');
@@ -1255,7 +1412,7 @@ window.addEventListener('error', (e) => {
 
 
 /* ═══════════════════════════════════════════════════════════════
-   STARTUP DIAGNOSTICS — কোন কিছু লোড হয়েছে কিনা
+   STARTUP DIAGNOSTICS
    ═══════════════════════════════════════════════════════════════ */
 
 setTimeout(() => {
@@ -1267,8 +1424,14 @@ setTimeout(() => {
     '✓ App': typeof app !== 'undefined',
     '✓ Animations': typeof animations !== 'undefined',
     '✓ Live Keyboard': !!window.liveKeyboard,
+    '✓ Standalone Keyboard': !!window.standaloneKeyboard,
     '✓ progressChart': !!document.getElementById('progressChart'),
-    '✓ liveKbContainer': !!document.getElementById('liveKbContainer')
+    '✓ weeklyChart': !!document.getElementById('weeklyChart'),
+    '✓ detailedChart': !!document.getElementById('detailedChart'),
+    '✓ liveKbContainer': !!document.getElementById('liveKbContainer'),
+    '✓ badgesArea': !!document.getElementById('badgesArea'),
+    '✓ topLessons': !!document.getElementById('topLessons'),
+    '✓ recentLessons': !!document.getElementById('recentLessons')
   };
 
   console.group('%c🔍 Startup Diagnostics', 'color:#f59e0b;font-weight:bold;font-size:14px;');
