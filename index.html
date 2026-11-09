@@ -1,2387 +1,292 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="bn" data-theme="dark">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
-<meta name="description" content="BanglaTypingPro Ultra — Learn Bengali typing with lessons, analytics, virtual keyboard and races.">
-<title>BanglaTypingPro Ultra — Bengali Typing Master</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="বাংলা টাইপিং একাডেমি - বিজয় কীবোর্ডে ইউনিকোড টাইপিং শিখুন">
+<title>বাংলা টাইপিং একাডেমি — বিজয় ইউনিকোড প্রো</title>
 
-<!-- ===================== CDN DEPENDENCIES ===================== -->
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&family=Inter:wght@300..700&family=Baloo+Da+2:wght@400..800&display=swap" rel="stylesheet">
-
-<style>
-/* ============================================================
-   1. DESIGN TOKENS / THEMES
-   ============================================================ */
-:root{
-  --bg:#0d0f1a;
-  --bg-glow-1:rgba(108,92,231,.22);
-  --bg-glow-2:rgba(0,210,255,.14);
-  --panel:#161a2e;
-  --panel-2:#1d2239;
-  --panel-3:#252b47;
-  --text:#e9edfa;
-  --muted:#98a1bd;
-  --border:#2a3054;
-  --accent:#7c6cf0;
-  --accent-2:#22d3ee;
-  --ok:#22c55e;
-  --bad:#ef4444;
-  --warn:#f59e0b;
-  --shadow:0 12px 34px rgba(0,0,0,.35);
-  --type-scale:1;
-}
-[data-theme="light"]{
-  --bg:#f4f6fc;
-  --bg-glow-1:rgba(124,108,240,.14);
-  --bg-glow-2:rgba(34,211,238,.12);
-  --panel:#ffffff;
-  --panel-2:#f2f4fb;
-  --panel-3:#e7ebf7;
-  --text:#151a2d;
-  --muted:#5c6480;
-  --border:#dfe4f2;
-  --accent:#6b5ce7;
-  --accent-2:#0891b2;
-  --ok:#16a34a;
-  --bad:#dc2626;
-  --warn:#d97706;
-  --shadow:0 12px 30px rgba(20,30,70,.10);
-}
-
-/* ============================================================
-   2. BASE
-   ============================================================ */
-*{box-sizing:border-box}
-html,body{height:100%}
-body{
-  background:
-    radial-gradient(1100px 560px at 18% -12%, var(--bg-glow-1), transparent 70%),
-    radial-gradient(900px 480px at 92% -6%, var(--bg-glow-2), transparent 70%),
-    var(--bg);
-  background-attachment:fixed;
-  color:var(--text);
-  font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
-  min-height:100vh;
-  transition:background .3s ease,color .3s ease;
-}
-.bn{font-family:'Hind Siliguri','Noto Sans Bengali','Baloo Da 2',sans-serif}
-::selection{background:var(--accent);color:#fff}
-::-webkit-scrollbar{width:10px;height:10px}
-::-webkit-scrollbar-thumb{background:var(--panel-3);border-radius:10px}
-::-webkit-scrollbar-track{background:transparent}
-
-.text-muted{color:var(--muted)!important}
-.text-accent{color:var(--accent)!important}
-.text-ok{color:var(--ok)!important}
-.text-bad{color:var(--bad)!important}
-.text-warn{color:var(--warn)!important}
-
-/* ============================================================
-   3. COMPONENTS
-   ============================================================ */
-.card-panel{
-  background:var(--panel);
-  border:1px solid var(--border);
-  border-radius:16px;
-  box-shadow:var(--shadow);
-}
-.btp-nav{
-  background:color-mix(in srgb, var(--panel) 88%, transparent);
-  backdrop-filter:blur(14px);
-  border-bottom:1px solid var(--border);
-}
-.navbar-brand{
-  font-weight:800;letter-spacing:-.4px;color:var(--text)!important;
-  font-size:1.15rem;
-}
-.navbar-brand i{color:var(--accent-2)}
-.btn-icon{
-  width:40px;height:40px;display:inline-flex;align-items:center;justify-content:center;
-  border-radius:12px;border:1px solid var(--border);background:var(--panel-2);color:var(--text);
-  transition:.18s;
-}
-.btn-icon:hover{background:var(--panel-3);color:var(--accent-2);transform:translateY(-1px)}
-.btn-accent{
-  background:linear-gradient(135deg,var(--accent),var(--accent-2));
-  border:none;color:#fff;font-weight:600;border-radius:12px;
-  transition:.2s;
-}
-.btn-accent:hover{filter:brightness(1.1);color:#fff;transform:translateY(-1px);box-shadow:0 8px 22px rgba(124,108,240,.35)}
-.btn-outline{
-  border:1px solid var(--border);background:var(--panel-2);color:var(--text);border-radius:12px;font-weight:500;
-}
-.btn-outline:hover{background:var(--panel-3);color:var(--accent-2);border-color:var(--accent)}
-
-.form-select,.form-control{
-  background:var(--panel-2);border:1px solid var(--border);color:var(--text);border-radius:10px;
-}
-.form-select:focus,.form-control:focus{
-  background:var(--panel-2);color:var(--text);border-color:var(--accent);
-  box-shadow:0 0 0 .2rem rgba(124,108,240,.22);
-}
-.form-select option{background:var(--panel-2);color:var(--text)}
-.form-range::-webkit-slider-thumb{background:var(--accent)}
-.form-check-input:checked{background-color:var(--accent);border-color:var(--accent)}
-
-/* Navigation pills */
-.btp-pills{
-  display:flex;gap:.4rem;overflow-x:auto;padding:.55rem .25rem;
-  scrollbar-width:none;
-}
-.btp-pills::-webkit-scrollbar{display:none}
-.pill{
-  white-space:nowrap;border:1px solid var(--border);background:var(--panel-2);
-  color:var(--muted);padding:.5rem .95rem;border-radius:999px;font-size:.86rem;font-weight:600;
-  cursor:pointer;transition:.18s;display:inline-flex;align-items:center;gap:.45rem;
-}
-.pill:hover{color:var(--text);border-color:var(--accent)}
-.pill.active{
-  background:linear-gradient(135deg,var(--accent),var(--accent-2));
-  color:#fff;border-color:transparent;box-shadow:0 6px 18px rgba(124,108,240,.32);
-}
-
-/* Views */
-.view{display:none;animation:fade .28s ease}
-.view.active{display:block}
-@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-
-/* Stat cards */
-.stat-card{
-  background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:.85rem 1rem;
-  position:relative;overflow:hidden;
-}
-.stat-card .label{font-size:.7rem;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:700}
-.stat-card .value{font-size:1.45rem;font-weight:800;line-height:1.15}
-.stat-card i{position:absolute;right:.7rem;top:.7rem;font-size:1.1rem;opacity:.28}
-
-/* ============================================================
-   4. TYPING TEST AREA
-   ============================================================ */
-.type-wrap{position:relative;padding:1.35rem 1.5rem;min-height:190px}
-.type-text{
-  font-size:calc(1.32rem * var(--type-scale));
-  line-height:2.15;
-  letter-spacing:.2px;
-  white-space:pre-wrap;
-  word-break:break-word;
-  max-height:290px;overflow-y:auto;
-  outline:none;
-  user-select:none;
-}
-.type-text .ch{
-  position:relative;color:var(--muted);border-radius:3px;
-  transition:color .08s linear,background .08s linear;
-  padding:1px 0;
-}
-.type-text .ch.correct{color:var(--ok)}
-.type-text .ch.wrong{
-  color:#fff;background:rgba(239,68,68,.85);text-decoration:underline wavy rgba(255,255,255,.6);
-}
-.type-text .ch.current{
-  background:rgba(124,108,240,.28);
-  box-shadow:inset 0 -2px 0 var(--accent);
-  border-radius:4px;
-}
-.type-text .ch.current::before{
-  content:'';position:absolute;left:-1px;top:0;bottom:0;width:2px;
-  background:var(--accent-2);animation:blink 1s steps(2) infinite;
-}
-@keyframes blink{50%{opacity:0}}
-
-#nativeInput{
-  position:absolute;inset:0;width:100%;height:100%;
-  background:transparent;border:none;outline:none;resize:none;
-  color:transparent;caret-color:transparent;z-index:2;
-  font-size:16px; /* prevents iOS zoom */
-}
-.type-wrap.zen{padding:2.2rem}
-.type-wrap.zen .type-text{font-size:calc(1.6rem * var(--type-scale))}
-
-/* Race bars */
-.race-lane{display:flex;align-items:center;gap:.7rem;margin-bottom:.55rem}
-.race-lane .who{width:74px;font-size:.78rem;font-weight:700;color:var(--muted);text-align:right}
-.race-track{flex:1;height:12px;background:var(--panel-3);border-radius:999px;overflow:hidden}
-.race-fill{height:100%;width:0%;border-radius:999px;transition:width .12s linear}
-.race-fill.user{background:linear-gradient(90deg,var(--accent),var(--accent-2))}
-.race-fill.bot{background:linear-gradient(90deg,#f59e0b,#ef4444)}
-
-/* ============================================================
-   5. VIRTUAL KEYBOARD
-   ============================================================ */
-.kb-host{overflow-x:auto;padding-bottom:.4rem}
-.kb{display:flex;flex-direction:column;gap:6px;min-width:660px}
-.kb-row{display:flex;gap:6px;justify-content:center}
-.kb-key{
-  flex:1 0 auto;min-width:42px;height:46px;border-radius:9px;
-  background:var(--panel-2);border:1px solid var(--border);
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  font-size:.82rem;font-weight:600;color:var(--text);
-  position:relative;transition:.08s;cursor:default;user-select:none;
-  border-bottom-width:3px;
-}
-.kb-key .shift-char{font-size:.6rem;color:var(--muted);line-height:1;margin-top:1px}
-.kb-key.wide-2{flex:0 0 74px}
-.kb-key.wide-3{flex:0 0 104px}
-.kb-key.space{flex:1 0 320px}
-.kb-key.active{
-  background:linear-gradient(135deg,var(--accent),var(--accent-2));
-  color:#fff;transform:translateY(2px);border-bottom-width:1px;
-  box-shadow:0 0 20px rgba(124,108,240,.55);
-}
-.kb-key.active .shift-char{color:rgba(255,255,255,.8)}
-/* finger colour coding */
-.f-lp{border-bottom-color:#ef4444}
-.f-lr{border-bottom-color:#f59e0b}
-.f-lm{border-bottom-color:#22c55e}
-.f-li{border-bottom-color:#3b82f6}
-.f-ri{border-bottom-color:#a855f7}
-.f-rm{border-bottom-color:#ec4899}
-.f-rr{border-bottom-color:#14b8a6}
-.f-rp{border-bottom-color:#eab308}
-.f-th{border-bottom-color:#64748b}
-/* heat map */
-.kb-key.heat-1{background:rgba(245,158,11,.30)}
-.kb-key.heat-2{background:rgba(245,158,11,.55)}
-.kb-key.heat-3{background:rgba(239,68,68,.62);color:#fff}
-.finger-legend{display:flex;flex-wrap:wrap;gap:.6rem;font-size:.72rem;color:var(--muted)}
-.finger-legend .dot{width:10px;height:10px;border-radius:3px;display:inline-block;margin-right:.3rem}
-
-/* ============================================================
-   6. LESSONS / ACHIEVEMENTS / MISC
-   ============================================================ */
-.lesson-card{
-  background:var(--panel);border:1px solid var(--border);border-radius:14px;
-  padding:1rem;cursor:pointer;transition:.18s;height:100%;
-}
-.lesson-card:hover{transform:translateY(-3px);border-color:var(--accent);box-shadow:0 12px 26px rgba(124,108,240,.22)}
-.lesson-card .mod{font-size:.68rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-2)}
-.lesson-card h6{font-weight:700;margin:.35rem 0 .45rem}
-.lesson-card p{font-size:.8rem;color:var(--muted);margin:0;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
-
-.badge-card{
-  background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:1.1rem;text-align:center;
-  transition:.2s;height:100%;
-}
-.badge-card.unlocked{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent),0 12px 26px rgba(124,108,240,.2)}
-.badge-card.locked{opacity:.45;filter:grayscale(1)}
-.badge-icon{
-  width:62px;height:62px;margin:0 auto .7rem;border-radius:50%;
-  display:flex;align-items:center;justify-content:center;font-size:1.5rem;
-  background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#fff;
-}
-.badge-card h6{font-size:.85rem;font-weight:700;margin-bottom:.25rem}
-.badge-card small{color:var(--muted);font-size:.72rem}
-
-/* Calendar streak grid */
-.cal-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(26px,1fr));gap:5px}
-.cal-cell{aspect-ratio:1;border-radius:5px;background:var(--panel-3);position:relative}
-.cal-cell.on{background:linear-gradient(135deg,var(--accent),var(--accent-2))}
-.cal-cell.today{outline:2px solid var(--accent-2);outline-offset:1px}
-
-/* Toasts */
-#toastHost{position:fixed;right:16px;bottom:16px;z-index:9999;display:flex;flex-direction:column;gap:.5rem}
-.btp-toast{
-  background:var(--panel);border:1px solid var(--accent);border-left:4px solid var(--accent);
-  color:var(--text);padding:.7rem 1rem;border-radius:10px;box-shadow:var(--shadow);
-  font-size:.85rem;font-weight:600;animation:slideIn .3s ease;max-width:320px;
-}
-@keyframes slideIn{from{transform:translateX(120%);opacity:0}to{transform:none;opacity:1}}
-
-/* Certificate */
-#certificateArea{
-  background:#fff;color:#1a1a2e;border-radius:14px;padding:2.4rem 2rem;
-  border:10px double #7c6cf0;text-align:center;
-}
-#certificateArea h2{font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:#3b2fa8}
-#certificateArea .cert-name{font-size:2rem;font-weight:800;color:#111;margin:1rem 0}
-#certificateArea .cert-metrics{display:flex;justify-content:center;gap:2.2rem;margin:1.4rem 0}
-#certificateArea .cert-metrics div{font-size:.72rem;text-transform:uppercase;letter-spacing:.1em;color:#666}
-#certificateArea .cert-metrics b{display:block;font-size:1.5rem;color:#3b2fa8}
-
-/* Focus / Zen */
-body.zen-mode .btp-nav,
-body.zen-mode .btp-pills,
-body.zen-mode .toolbar,
-body.zen-mode #keyboardHost,
-body.zen-mode .stats-strip .extra{display:none!important}
-
-/* Print */
-@media print{
-  body *{visibility:hidden!important}
-  #certificateArea,#certificateArea *{visibility:visible!important}
-  #certificateArea{position:absolute;left:0;top:0;width:100%;border-color:#7c6cf0}
-}
-
-/* Responsive tweaks */
-@media(max-width:576px){
-  .type-wrap{padding:1rem}
-  .type-text{font-size:calc(1.1rem * var(--type-scale))}
-  .kb{min-width:560px}
-  .kb-key{min-width:34px;height:40px;font-size:.72rem}
-}
-</style>
+<!-- Bootstrap 5 -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<!-- Bootstrap Icons -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+<!-- Bengali Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Noto+Sans+Bengali:wght@400;600;700;900&display=swap" rel="stylesheet">
+<!-- Custom CSS -->
+<link rel="stylesheet" href="css/style.css">
 </head>
-
 <body>
 
-<!-- ============================================================
-     NAVBAR
-     ============================================================ -->
-<nav class="navbar btp-nav sticky-top py-2">
-  <div class="container-xl d-flex align-items-center gap-2">
-    <a class="navbar-brand d-flex align-items-center gap-2" href="#" data-goto="dashboard">
-      <i class="fa-solid fa-keyboard"></i>
-      <span>BanglaTyping<span class="text-accent">Pro</span></span>
-      <span class="badge rounded-pill" style="background:var(--panel-3);color:var(--accent-2);font-size:.6rem">ULTRA</span>
-    </a>
+<!-- ═══════════════════════════════════════════ -->
+<!-- WATERMARK LAYER — MOTTALAB MIA              -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="watermark-layer" aria-hidden="true">
+  <span class="wm wm-a">MOTTALAB MIA</span>
+  <span class="wm wm-b">MOTTALAB MIA</span>
+  <span class="wm wm-c">MOTTALAB MIA</span>
+  <span class="wm wm-d">MOTTALAB MIA</span>
+  <span class="wm wm-e">MOTTALAB MIA</span>
+  <span class="wm wm-f">MOTTALAB MIA</span>
+  <span class="wm wm-g">MOTTALAB MIA</span>
+  <span class="wm wm-h">MOTTALAB MIA</span>
+  <span class="wm wm-i">MOTTALAB MIA</span>
+  <span class="wm wm-j">MOTTALAB MIA</span>
+</div>
 
-    <div class="ms-auto d-flex align-items-center gap-2">
-      <div class="d-none d-md-flex align-items-center gap-1 me-2 px-2 py-1"
-           style="background:var(--panel-2);border:1px solid var(--border);border-radius:10px">
-        <i class="fa-solid fa-fire text-warn"></i>
-        <span class="small fw-bold" id="navStreak">0</span>
-        <span class="small text-muted">day streak</span>
-      </div>
-      <button class="btn-icon" id="btnTheme" title="Toggle theme"><i class="fa-solid fa-moon"></i></button>
-      <button class="btn-icon" id="btnLang" title="Switch language" style="width:auto;padding:0 .7rem;font-size:.8rem;font-weight:700">বাং</button>
-      <button class="btn-icon" data-goto="settings" title="Settings"><i class="fa-solid fa-gear"></i></button>
+<!-- ═══════════════════════════════════════════ -->
+<!-- ANIMATED BACKGROUND                          -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="bg-anim" aria-hidden="true">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+  <div class="orb orb-4"></div>
+  <div class="stars"></div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- NAVBAR                                       -->
+<!-- ═══════════════════════════════════════════ -->
+<nav class="navbar glass-nav sticky-top">
+  <div class="container-fluid px-3 px-lg-4">
+    <a class="navbar-brand" href="#">
+      <span class="brand-icon">⌨</span>
+      <span class="brand-text">বাংলা টাইপিং</span>
+      <span class="badge-ultra">BIJOY UNICODE PRO</span>
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navMenu">
+      <ul class="navbar-nav ms-auto gap-1">
+        <li class="nav-item"><button class="nav-btn active" data-tab="dashboard"><i class="bi bi-speedometer2"></i> ড্যাশবোর্ড</button></li>
+        <li class="nav-item"><button class="nav-btn" data-tab="lessons"><i class="bi bi-journal-bookmark"></i> লেসন</button></li>
+        <li class="nav-item"><button class="nav-btn" data-tab="typing"><i class="bi bi-pencil-square"></i> টাইপিং</button></li>
+        <li class="nav-item"><button class="nav-btn" data-tab="exam"><i class="bi bi-trophy"></i> পরীক্ষা</button></li>
+        <li class="nav-item"><button class="nav-btn" data-tab="keyboard"><i class="bi bi-keyboard"></i> কীবোর্ড</button></li>
+        <li class="nav-item"><button class="nav-btn" data-tab="game"><i class="bi bi-controller"></i> গেম</button></li>
+        <li class="nav-item"><button class="nav-btn" data-tab="stats"><i class="bi bi-bar-chart-line"></i> পরিসংখ্যান</button></li>
+        <li class="nav-item"><button class="nav-btn" id="themeBtn" title="থিম"><i class="bi bi-moon-stars"></i></button></li>
+      </ul>
     </div>
   </div>
 </nav>
 
-<!-- ============================================================
-     NAVIGATION PILLS
-     ============================================================ -->
-<div class="container-xl">
-  <div class="btp-pills" id="navPills">
-    <button class="pill active" data-goto="dashboard"><i class="fa-solid fa-gauge-high"></i><span data-i18n="nav_dashboard">Dashboard</span></button>
-    <button class="pill" data-goto="practice"><i class="fa-solid fa-keyboard"></i><span data-i18n="nav_practice">Practice</span></button>
-    <button class="pill" data-goto="lessons"><i class="fa-solid fa-layer-group"></i><span data-i18n="nav_lessons">Lessons</span></button>
-    <button class="pill" data-goto="keyboard"><i class="fa-solid fa-table-cells-large"></i><span data-i18n="nav_keyboard">Keyboard</span></button>
-    <button class="pill" data-goto="analytics"><i class="fa-solid fa-chart-line"></i><span data-i18n="nav_analytics">Analytics</span></button>
-    <button class="pill" data-goto="achievements"><i class="fa-solid fa-trophy"></i><span data-i18n="nav_achievements">Achievements</span></button>
-    <button class="pill" data-goto="settings"><i class="fa-solid fa-sliders"></i><span data-i18n="nav_settings">Settings</span></button>
-  </div>
-</div>
+<!-- ═══════════════════════════════════════════ -->
+<!-- MAIN CONTENT                                 -->
+<!-- ═══════════════════════════════════════════ -->
+<main class="container-fluid px-3 px-lg-4 my-4">
 
-<main class="container-xl pb-5">
-
-  <!-- ==========================================================
-       VIEW: DASHBOARD
-       ========================================================== -->
-  <section id="view-dashboard" class="view active">
-    <div class="row g-3 mb-3">
-      <div class="col-6 col-lg-3">
-        <div class="stat-card"><i class="fa-solid fa-bolt text-accent"></i>
-          <div class="label" data-i18n="best_wpm">Best WPM</div>
-          <div class="value" id="dashBestWpm">0</div>
+  <!-- ═══════════════ DASHBOARD ═══════════════ -->
+  <section class="page active" id="page-dashboard">
+    <div class="glass hero p-4 p-lg-5 mb-4">
+      <div class="row align-items-center">
+        <div class="col-lg-8">
+          <h1 class="glow-text mb-2">বিজয় ইউনিকোড টাইপিং</h1>
+          <p class="lead mb-3">১০০+ লেসন • সম্পূর্ণ বিজয় কীবোর্ড • লাইভ হ্যান্ড ইন্ডিকেটর</p>
+          <button class="btn btn-ultra" onclick="app.openLesson(1)">
+            <i class="bi bi-play-fill"></i> শুরু করুন
+          </button>
+          <button class="btn btn-outline-light ms-2" onclick="app.dailyChallenge()">
+            <i class="bi bi-lightning-charge"></i> ডেইলি চ্যালেঞ্জ
+          </button>
         </div>
-      </div>
-      <div class="col-6 col-lg-3">
-        <div class="stat-card"><i class="fa-solid fa-bullseye text-ok"></i>
-          <div class="label" data-i18n="best_acc">Best Accuracy</div>
-          <div class="value" id="dashBestAcc">0%</div>
-        </div>
-      </div>
-      <div class="col-6 col-lg-3">
-        <div class="stat-card"><i class="fa-solid fa-clock text-warn"></i>
-          <div class="label" data-i18n="practice_time">Practice Time</div>
-          <div class="value" id="dashTime">0m</div>
-        </div>
-      </div>
-      <div class="col-6 col-lg-3">
-        <div class="stat-card"><i class="fa-solid fa-fire text-bad"></i>
-          <div class="label" data-i18n="day_streak">Day Streak</div>
-          <div class="value" id="dashStreak">0</div>
+        <div class="col-lg-4 text-center d-none d-lg-block">
+          <div class="hero-emoji">⌨️</div>
         </div>
       </div>
     </div>
 
-    <div class="row g-3">
-      <div class="col-lg-7">
-        <div class="card-panel p-3 p-md-4 h-100">
-          <div class="d-flex align-items-center justify-content-between mb-3">
-            <h5 class="mb-0 fw-bold"><i class="fa-solid fa-rocket text-accent me-2"></i><span data-i18n="quick_start">Quick Start</span></h5>
-            <span class="badge" style="background:var(--panel-3);color:var(--muted)" id="dashTests">0 tests</span>
-          </div>
-          <div class="row g-2">
-            <div class="col-6 col-md-3"><button class="btn btn-accent w-100 py-3 quick-start" data-dur="60"><div class="fw-bold">1:00</div><small class="d-block opacity-75">1 min</small></button></div>
-            <div class="col-6 col-md-3"><button class="btn btn-outline w-100 py-3 quick-start" data-dur="120"><div class="fw-bold">2:00</div><small class="d-block opacity-75">2 min</small></button></div>
-            <div class="col-6 col-md-3"><button class="btn btn-outline w-100 py-3 quick-start" data-dur="300"><div class="fw-bold">5:00</div><small class="d-block opacity-75">5 min</small></button></div>
-            <div class="col-6 col-md-3"><button class="btn btn-outline w-100 py-3 quick-start" data-dur="0"><div class="fw-bold">∞</div><small class="d-block opacity-75">Endless</small></button></div>
-          </div>
-          <hr style="border-color:var(--border)">
-          <div class="row g-3 align-items-center">
-            <div class="col-md-7">
-              <label class="small text-muted fw-bold mb-1" data-i18n="active_layout">Active Layout</label>
-              <select class="form-select form-select-sm" id="dashLayout"></select>
-            </div>
-            <div class="col-md-5">
-              <label class="small text-muted fw-bold mb-1" data-i18n="profile_name">Your Name</label>
-              <input class="form-control form-control-sm" id="dashName" placeholder="Your name…">
-            </div>
-          </div>
+    <div class="row g-3 mb-4">
+      <div class="col-6 col-md-3">
+        <div class="stat-card glass">
+          <i class="bi bi-speedometer2 c1"></i>
+          <h3 id="statWPM">0</h3>
+          <small>WPM গতি</small>
         </div>
       </div>
-
-      <div class="col-lg-5">
-        <div class="card-panel p-3 p-md-4 h-100">
-          <h5 class="fw-bold mb-3"><i class="fa-solid fa-calendar-check text-accent-2 me-2"></i><span data-i18n="streak_calendar">Streak Calendar</span></h5>
-          <div class="cal-grid" id="dashCalendar"></div>
-          <div class="d-flex justify-content-between mt-3 small text-muted">
-            <span data-i18n="last_30_days">Last 30 days</span>
-            <span id="dashMonthDays">0 / 30</span>
-          </div>
+      <div class="col-6 col-md-3">
+        <div class="stat-card glass">
+          <i class="bi bi-bullseye c2"></i>
+          <h3 id="statAccuracy">0%</h3>
+          <small>নির্ভুলতা</small>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="stat-card glass">
+          <i class="bi bi-trophy-fill c3"></i>
+          <h3 id="statCompleted">0/100</h3>
+          <small>সম্পন্ন</small>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="stat-card glass">
+          <i class="bi bi-fire c4"></i>
+          <h3 id="statStreak">0</h3>
+          <small>স্ট্রিক</small>
         </div>
       </div>
     </div>
 
-    <div class="card-panel p-3 p-md-4 mt-3">
-      <h5 class="fw-bold mb-3"><i class="fa-solid fa-clock-rotate-left text-accent me-2"></i><span data-i18n="recent_tests">Recent Tests</span></h5>
-      <div class="table-responsive">
-        <table class="table table-sm align-middle mb-0" style="color:var(--text)">
-          <thead><tr class="small text-muted">
-            <th data-i18n="col_date">Date</th><th data-i18n="col_mode">Mode</th>
-            <th data-i18n="col_wpm">WPM</th><th data-i18n="col_acc">Accuracy</th><th data-i18n="col_dur">Duration</th>
-          </tr></thead>
-          <tbody id="dashRecent"><tr><td colspan="5" class="text-center text-muted py-4" data-i18n="no_tests">No tests yet — take your first test!</td></tr></tbody>
-        </table>
-      </div>
-    </div>
-  </section>
-
-  <!-- ==========================================================
-       VIEW: PRACTICE
-       ========================================================== -->
-  <section id="view-practice" class="view">
-    <!-- Toolbar -->
-    <div class="card-panel p-3 mb-3 toolbar">
-      <div class="d-flex flex-wrap align-items-center gap-2">
-        <select class="form-select form-select-sm w-auto" id="selMode">
-          <option value="60">1 min</option>
-          <option value="120">2 min</option>
-          <option value="300">5 min</option>
-          <option value="0">Endless</option>
-        </select>
-        <select class="form-select form-select-sm w-auto" id="selLayout"></select>
-        <button class="btn btn-sm btn-accent" id="btnRestart"><i class="fa-solid fa-rotate-right me-1"></i><span data-i18n="restart">Restart</span></button>
-        <button class="btn btn-sm btn-outline" id="btnFocus"><i class="fa-solid fa-expand me-1"></i><span data-i18n="focus">Focus</span></button>
-        <button class="btn btn-sm btn-outline" id="btnSound"><i class="fa-solid fa-volume-xmark me-1"></i><span data-i18n="sound">Sound</span></button>
-        <button class="btn btn-sm btn-outline" data-bs-toggle="modal" data-bs-target="#customModal"><i class="fa-solid fa-pen-nib me-1"></i><span data-i18n="custom">Custom</span></button>
-
-        <div class="ms-auto d-flex align-items-center gap-2">
-          <div class="form-check form-switch mb-0 d-flex align-items-center gap-1">
-            <input class="form-check-input" type="checkbox" id="chkRace">
-            <label class="form-check-label small" for="chkRace"><i class="fa-solid fa-flag-checkered me-1"></i><span data-i18n="race">Race</span></label>
-          </div>
-          <select class="form-select form-select-sm w-auto d-none" id="selBot">
-            <option value="20">Bot 20 WPM</option>
-            <option value="35" selected>Bot 35 WPM</option>
-            <option value="50">Bot 50 WPM</option>
-            <option value="70">Bot 70 WPM</option>
-          </select>
-          <label class="small text-muted d-none d-sm-block mb-0">Aa</label>
-          <input type="range" class="form-range" id="rngFont" min="0.8" max="1.8" step="0.1" style="width:90px">
-        </div>
-      </div>
-    </div>
-
-    <!-- Live statistics -->
-    <div class="row g-2 mb-3 stats-strip">
-      <div class="col-4 col-md-2"><div class="stat-card"><div class="label">WPM</div><div class="value text-accent" id="liveWpm">0</div></div></div>
-      <div class="col-4 col-md-2"><div class="stat-card"><div class="label" data-i18n="accuracy">Accuracy</div><div class="value text-ok" id="liveAcc">100%</div></div></div>
-      <div class="col-4 col-md-2"><div class="stat-card"><div class="label" data-i18n="time">Time</div><div class="value" id="liveTime">0:00</div></div></div>
-      <div class="col-4 col-md-2"><div class="stat-card"><div class="label" data-i18n="errors">Errors</div><div class="value text-bad" id="liveErr">0</div></div></div>
-      <div class="col-4 col-md-2"><div class="stat-card"><div class="label" data-i18n="chars">Chars</div><div class="value" id="liveChars">0</div></div></div>
-      <div class="col-4 col-md-2"><div class="stat-card"><div class="label" data-i18n="progress">Progress</div><div class="value" id="liveProg">0%</div></div></div>
-    </div>
-
-    <!-- Race lanes -->
-    <div class="card-panel p-3 mb-3 d-none" id="raceArea">
-      <div class="race-lane"><div class="who"><i class="fa-solid fa-user me-1"></i>You</div>
-        <div class="race-track"><div class="race-fill user" id="raceUser"></div></div></div>
-      <div class="race-lane"><div class="who"><i class="fa-solid fa-robot me-1"></i>Bot</div>
-        <div class="race-track"><div class="race-fill bot" id="raceBot"></div></div></div>
-      <div class="text-center small fw-bold" id="raceStatus"></div>
-    </div>
-
-    <!-- Typing surface -->
-    <div class="card-panel type-wrap" id="typeWrap">
-      <div class="type-text bn" id="textDisplay"></div>
-      <textarea id="nativeInput" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
-    </div>
-
-    <!-- Virtual keyboard -->
-    <div class="card-panel p-3 mt-3" id="keyboardHost">
-      <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
-        <h6 class="mb-0 fw-bold"><i class="fa-solid fa-keyboard text-accent me-2"></i><span data-i18n="virtual_kb">Virtual Keyboard</span></h6>
-        <div class="finger-legend" id="fingerLegend"></div>
-      </div>
-      <div class="kb-host"><div class="kb" id="kbPractice"></div></div>
-    </div>
-  </section>
-
-  <!-- ==========================================================
-       VIEW: LESSONS
-       ========================================================== -->
-  <section id="view-lessons" class="view">
-    <div class="card-panel p-3 p-md-4 mb-3">
-      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-        <div>
-          <h4 class="fw-bold mb-1"><i class="fa-solid fa-layer-group text-accent me-2"></i><span data-i18n="curriculum">Structured Curriculum</span></h4>
-          <p class="text-muted small mb-0" data-i18n="curriculum_sub">Five progressive modules — from single letters to full paragraphs.</p>
-        </div>
-        <button class="btn btn-accent" data-bs-toggle="modal" data-bs-target="#customModal">
-          <i class="fa-solid fa-pen-nib me-1"></i><span data-i18n="custom_lesson">Custom Lesson</span>
-        </button>
-      </div>
-    </div>
-    <div id="lessonModules"></div>
-  </section>
-
-  <!-- ==========================================================
-       VIEW: KEYBOARD GUIDE
-       ========================================================== -->
-  <section id="view-keyboard" class="view">
-    <div class="card-panel p-3 p-md-4 mb-3">
-      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-        <div>
-          <h4 class="fw-bold mb-1"><i class="fa-solid fa-table-cells-large text-accent me-2"></i><span data-i18n="layout_guide">Layout & Finger Guide</span></h4>
-          <p class="text-muted small mb-0" data-i18n="layout_sub">Colour bars show which finger presses each key. Heat colours show your weak keys.</p>
-        </div>
-        <select class="form-select form-select-sm w-auto" id="selLayoutGuide"></select>
-      </div>
-      <div class="kb-host"><div class="kb" id="kbGuide"></div></div>
-      <div class="finger-legend mt-3" id="fingerLegend2"></div>
-    </div>
-
-    <div class="card-panel p-3 p-md-4">
-      <h5 class="fw-bold mb-3"><i class="fa-solid fa-fire-flame-curved text-bad me-2"></i><span data-i18n="weak_keys">Weak Keys (Heatmap)</span></h5>
-      <div id="weakKeysList" class="d-flex flex-wrap gap-2"></div>
-      <p class="text-muted small mt-3 mb-0" data-i18n="weak_hint">Keys with the most mistakes are highlighted in red on the virtual keyboard above.</p>
-    </div>
-  </section>
-
-  <!-- ==========================================================
-       VIEW: ANALYTICS
-       ========================================================== -->
-  <section id="view-analytics" class="view">
     <div class="row g-3">
       <div class="col-lg-8">
-        <div class="card-panel p-3 p-md-4">
-          <h5 class="fw-bold mb-3"><i class="fa-solid fa-chart-line text-accent me-2"></i><span data-i18n="wpm_trend">WPM Trend (last 30 tests)</span></h5>
-          <canvas id="chartWpm" height="150"></canvas>
+        <div class="glass p-3">
+          <h5><i class="bi bi-graph-up-arrow"></i> অগ্রগতি</h5>
+          <canvas id="progressChart" height="120"></canvas>
         </div>
       </div>
       <div class="col-lg-4">
-        <div class="card-panel p-3 p-md-4 h-100">
-          <h5 class="fw-bold mb-3"><i class="fa-solid fa-bullseye text-ok me-2"></i><span data-i18n="acc_trend">Accuracy Trend</span></h5>
-          <canvas id="chartAcc" height="150"></canvas>
-        </div>
-      </div>
-      <div class="col-lg-6">
-        <div class="card-panel p-3 p-md-4">
-          <h5 class="fw-bold mb-3"><i class="fa-solid fa-layer-group text-accent-2 me-2"></i><span data-i18n="mode_split">Tests by Mode</span></h5>
-          <canvas id="chartMode" height="150"></canvas>
-        </div>
-      </div>
-      <div class="col-lg-6">
-        <div class="card-panel p-3 p-md-4">
-          <h5 class="fw-bold mb-3"><i class="fa-solid fa-triangle-exclamation text-bad me-2"></i><span data-i18n="error_breakdown">Error Breakdown</span></h5>
-          <div id="errorBreakdown" class="d-flex flex-wrap gap-2"></div>
+        <div class="glass p-3">
+          <h5><i class="bi bi-award-fill"></i> ব্যাজ</h5>
+          <div id="badgesArea" class="d-flex flex-wrap gap-2"></div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- ==========================================================
-       VIEW: ACHIEVEMENTS
-       ========================================================== -->
-  <section id="view-achievements" class="view">
-    <div class="card-panel p-3 p-md-4 mb-3">
-      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-        <div>
-          <h4 class="fw-bold mb-1"><i class="fa-solid fa-trophy text-warn me-2"></i><span data-i18n="achievements">Achievements</span></h4>
-          <p class="text-muted small mb-0" data-i18n="achievements_sub">Unlock badges by hitting speed, accuracy and consistency milestones.</p>
-        </div>
-        <button class="btn btn-accent" data-bs-toggle="modal" data-bs-target="#certModal">
-          <i class="fa-solid fa-certificate me-1"></i><span data-i18n="get_certificate">Get Certificate</span>
-        </button>
+  <!-- ═══════════════ LESSONS ═══════════════ -->
+  <section class="page" id="page-lessons">
+    <div class="glass p-3 mb-3">
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+        <h4 class="mb-0"><i class="bi bi-journal-bookmark-fill"></i> লেসন <span class="badge bg-primary" id="lessonCount">0</span></h4>
       </div>
+      <input type="search" id="lessonSearch" class="form-control" placeholder="🔍 লেসন খুঁজুন...">
     </div>
-    <div class="row g-3" id="achievementGrid"></div>
+    <div id="lessonsGrid" class="row g-3"></div>
   </section>
 
-  <!-- ==========================================================
-       VIEW: SETTINGS
-       ========================================================== -->
-  <section id="view-settings" class="view">
-    <div class="row g-3">
-      <div class="col-lg-6">
-        <div class="card-panel p-3 p-md-4">
-          <h5 class="fw-bold mb-3"><i class="fa-solid fa-user text-accent me-2"></i><span data-i18n="profile">Profile</span></h5>
-          <label class="small text-muted fw-bold" data-i18n="profile_name">Your Name</label>
-          <input class="form-control mb-3" id="setName" placeholder="Your name…">
-          <label class="small text-muted fw-bold" data-i18n="avatar">Avatar</label>
-          <div class="d-flex flex-wrap gap-2" id="avatarPicker"></div>
+  <!-- ═══════════════ TYPING ═══════════════ -->
+  <section class="page" id="page-typing">
+    <div class="glass overflow-hidden">
+      <div class="typing-head p-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <div><i class="bi bi-pencil-square"></i> <strong id="lessonTitle">লেসন</strong></div>
+        <div class="d-flex flex-wrap gap-2">
+          <span class="chip"><i class="bi bi-clock"></i> <span id="timer">0:00</span></span>
+          <span class="chip c3"><i class="bi bi-lightning-fill"></i> <span id="wpm">0</span> WPM</span>
+          <span class="chip c2"><i class="bi bi-check-circle-fill"></i> <span id="accuracy">100</span>%</span>
+          <span class="chip c4"><i class="bi bi-x-circle-fill"></i> <span id="errors">0</span></span>
         </div>
       </div>
+      <div class="p-3 p-lg-4">
+        <!-- Target display -->
+        <div id="textDisplay" class="text-display mb-3"></div>
 
-      <div class="col-lg-6">
-        <div class="card-panel p-3 p-md-4">
-          <h5 class="fw-bold mb-3"><i class="fa-solid fa-sliders text-accent-2 me-2"></i><span data-i18n="preferences">Preferences</span></h5>
+        <!-- Input -->
+        <textarea id="typeInput" class="form-control type-input mb-3" rows="3"
+          placeholder="এখানে টাইপ করুন..." spellcheck="false" autocomplete="off"></textarea>
 
-          <label class="small text-muted fw-bold" data-i18n="layout">Typing Layout</label>
-          <select class="form-select mb-3" id="setLayout"></select>
-
-          <label class="small text-muted fw-bold" data-i18n="language">Interface Language</label>
-          <select class="form-select mb-3" id="setLang">
-            <option value="en">English</option>
-            <option value="bn">বাংলা</option>
-          </select>
-
-          <div class="d-flex justify-content-between align-items-center mb-2">
-            <span class="small fw-bold" data-i18n="keyboard_sound">Mechanical Key Sound</span>
-            <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="setSound"></div>
-          </div>
-          <div class="d-flex justify-content-between align-items-center mb-2">
-            <span class="small fw-bold" data-i18n="show_kb">Show Virtual Keyboard</span>
-            <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="setShowKb"></div>
-          </div>
-          <div class="d-flex justify-content-between align-items-center mb-2">
-            <span class="small fw-bold" data-i18n="show_finger">Finger Guide Colours</span>
-            <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="setFinger"></div>
-          </div>
-
-          <label class="small text-muted fw-bold mt-2 d-block" data-i18n="font_size">Text Size</label>
-          <input type="range" class="form-range" id="setFont" min="0.8" max="1.8" step="0.1">
+        <!-- Buttons -->
+        <div class="d-flex flex-wrap gap-2 mb-3">
+          <button class="btn btn-ultra" onclick="app.restartLesson()"><i class="bi bi-arrow-clockwise"></i> পুনরায়</button>
+          <button class="btn btn-success" onclick="app.nextLesson()"><i class="bi bi-arrow-right"></i> পরবর্তী</button>
+          <button class="btn btn-outline-light" onclick="app.showPage('lessons')">← ফিরে যান</button>
         </div>
-      </div>
 
-      <div class="col-12">
-        <div class="card-panel p-3 p-md-4">
-          <h5 class="fw-bold mb-3"><i class="fa-solid fa-database text-warn me-2"></i><span data-i18n="data_mgmt">Data Management</span></h5>
-          <div class="d-flex flex-wrap gap-2">
-            <button class="btn btn-outline" id="btnExport"><i class="fa-solid fa-download me-1"></i><span data-i18n="export">Export Progress (JSON)</span></button>
-            <button class="btn btn-outline" id="btnImport"><i class="fa-solid fa-upload me-1"></i><span data-i18n="import">Import Progress</span></button>
-            <input type="file" id="fileImport" accept="application/json" class="d-none">
-            <button class="btn btn-outline text-bad" id="btnReset"><i class="fa-solid fa-trash me-1"></i><span data-i18n="reset">Reset All Data</span></button>
-          </div>
-          <hr style="border-color:var(--border)">
-          <div class="small text-muted">
-            <span data-i18n="shortcuts">Keyboard shortcuts:</span>
-            <kbd>Ctrl</kbd>+<kbd>Enter</kbd> <span data-i18n="sc_restart">restart</span> ·
-            <kbd>Esc</kbd> <span data-i18n="sc_exit">exit focus mode</span> ·
-            <kbd>Ctrl</kbd>+<kbd>K</kbd> <span data-i18n="sc_kb">toggle keyboard</span>
+        <!-- Progress -->
+        <div class="progress glass-progress">
+          <div id="lessonProgress" class="progress-bar bg-gradient-primary" style="width:0%"></div>
+        </div>
+
+        <!-- LIVE VIRTUAL KEYBOARD with HAND -->
+        <div class="live-kb-wrap mt-4">
+          <h6 class="mb-2"><i class="bi bi-keyboard"></i> বিজয় কীবোর্ড — লাইভ:</h6>
+          <div id="liveKbContainer" class="live-kb-container">
+            <!-- Populated by JS -->
           </div>
         </div>
       </div>
     </div>
   </section>
+
+  <!-- ═══════════════ EXAM ═══════════════ -->
+  <section class="page" id="page-exam">
+    <div class="glass p-4">
+      <h3><i class="bi bi-trophy-fill c3"></i> টাইপিং পরীক্ষা</h3>
+      <p>সময় বেছে নিন:</p>
+      <div class="d-flex flex-wrap gap-2 mb-3">
+        <button class="btn btn-outline-warning" onclick="app.startExam(60)">১ মিনিট</button>
+        <button class="btn btn-outline-warning" onclick="app.startExam(120)">২ মিনিট</button>
+        <button class="btn btn-outline-warning" onclick="app.startExam(300)">৫ মিনিট</button>
+      </div>
+      <div id="examArea"></div>
+    </div>
+  </section>
+
+  <!-- ═══════════════ KEYBOARD ═══════════════ -->
+  <section class="page" id="page-keyboard">
+    <div class="glass p-4">
+      <h3 class="mb-3"><i class="bi bi-keyboard-fill"></i> বিজয় কীবোর্ড (ইউনিকোড)</h3>
+      <p class="text-muted">নিচের কীবোর্ডে ক্লিক করে টাইপ করতে পারেন অথবা সরাসরি কী চাপুন:</p>
+      <div id="virtualKeyboard" class="virtual-kb-container"></div>
+      <div class="mt-3">
+        <label class="form-label">টেস্ট করুন:</label>
+        <input type="text" id="kbTestInput" class="form-control glass-input" placeholder="এখানে টাইপ করুন...">
+        <small class="text-muted d-block mt-2">লক্ষ্য করুন: য় ড় ঢ় ৎ ং ঃ ঁ — সব সঠিকভাবে কাজ করবে</small>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════ GAME ═══════════════ -->
+  <section class="page" id="page-game">
+    <div class="glass p-4 text-center">
+      <h3><i class="bi bi-controller"></i> টাইপিং গেম</h3>
+      <p>নিচের ইনপুটে শব্দ টাইপ করে <kbd>Enter</kbd> চাপুন — পড়ন্ত শব্দ ধরা পড়বে!</p>
+      <button class="btn btn-ultra mb-3" onclick="app.startGame()"><i class="bi bi-play-fill"></i> গেম শুরু</button>
+      <button class="btn btn-outline-danger mb-3" onclick="app.stopGame()"><i class="bi bi-stop-fill"></i> থামান</button>
+      <div id="gameArea" class="game-area"></div>
+      <input type="text" id="gameInput" class="form-control mt-3 glass-input"
+        placeholder="শব্দ টাইপ করে Enter চাপুন..." disabled autocomplete="off">
+      <div class="mt-2">স্কোর: <strong id="gameScore">0</strong> • লাইভ: <strong id="gameLives">3</strong> ❤️</div>
+    </div>
+  </section>
+
+  <!-- ═══════════════ STATS ═══════════════ -->
+  <section class="page" id="page-stats">
+    <div class="glass p-4">
+      <h3><i class="bi bi-bar-chart-line-fill"></i> পরিসংখ্যান</h3>
+      <canvas id="detailedChart" height="120"></canvas>
+      <div class="table-responsive mt-3">
+        <table class="table glass-table">
+          <thead><tr><th>লেসন</th><th>WPM</th><th>নির্ভুলতা</th><th>তারিখ</th></tr></thead>
+          <tbody id="historyTable"></tbody>
+        </table>
+      </div>
+      <div class="d-flex gap-2 mt-3">
+        <button class="btn btn-outline-success" onclick="app.exportProgress()"><i class="bi bi-download"></i> এক্সপোর্ট</button>
+        <button class="btn btn-outline-danger" onclick="app.resetProgress()"><i class="bi bi-trash"></i> রিসেট</button>
+      </div>
+    </div>
+  </section>
+
 </main>
 
-<!-- ============================================================
-     MODALS
-     ============================================================ -->
-<!-- Results -->
-<div class="modal fade" id="resultModal" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content" style="background:var(--panel);border:1px solid var(--border);border-radius:18px">
-      <div class="modal-body p-4 text-center">
-        <div id="resultIcon" class="mb-2" style="font-size:2.6rem"><i class="fa-solid fa-flag-checkered text-accent"></i></div>
-        <h4 class="fw-bold mb-1" id="resultTitle">Test Complete!</h4>
-        <p class="text-muted small mb-4" id="resultSubtitle">Here's how you did</p>
-        <div class="row g-3 mb-4">
-          <div class="col-4"><div class="stat-card"><div class="label">WPM</div><div class="value text-accent" id="resWpm">0</div></div></div>
-          <div class="col-4"><div class="stat-card"><div class="label">ACC</div><div class="value text-ok" id="resAcc">0%</div></div></div>
-          <div class="col-4"><div class="stat-card"><div class="label">ERR</div><div class="value text-bad" id="resErr">0</div></div></div>
-        </div>
-        <div class="d-flex gap-2 justify-content-center flex-wrap">
-          <button class="btn btn-accent px-4" id="resRetry"><i class="fa-solid fa-rotate-right me-1"></i><span data-i18n="restart">Restart</span></button>
-          <button class="btn btn-outline px-4" data-bs-dismiss="modal"><i class="fa-solid fa-xmark me-1"></i>Close</button>
-        </div>
-      </div>
+<!-- ═══════════════════════════════════════════ -->
+<!-- TOAST                                        -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index:99999;">
+  <div id="toast" class="toast glass-toast border-0">
+    <div class="d-flex">
+      <div class="toast-body" id="toastMsg"></div>
+      <button class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
     </div>
   </div>
 </div>
 
-<!-- Custom lesson -->
-<div class="modal fade" id="customModal" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered modal-lg">
-    <div class="modal-content" style="background:var(--panel);border:1px solid var(--border);border-radius:18px">
-      <div class="modal-header border-0 pb-0">
-        <h5 class="modal-title fw-bold"><i class="fa-solid fa-pen-nib text-accent me-2"></i><span data-i18n="custom_lesson">Custom Lesson</span></h5>
-        <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <p class="text-muted small" data-i18n="custom_hint">Paste any Bengali text below to practise typing it.</p>
-        <textarea class="form-control bn" id="customText" rows="7"
-          placeholder="এখানে আপনার বাংলা টেক্সট পেস্ট করুন…"></textarea>
-      </div>
-      <div class="modal-footer border-0 pt-0">
-        <button class="btn btn-outline" data-bs-dismiss="modal">Cancel</button>
-        <button class="btn btn-accent" id="btnStartCustom"><i class="fa-solid fa-play me-1"></i>Start Practice</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Certificate -->
-<div class="modal fade" id="certModal" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered modal-lg">
-    <div class="modal-content" style="background:var(--panel);border:1px solid var(--border);border-radius:18px">
-      <div class="modal-header border-0 pb-0">
-        <h5 class="modal-title fw-bold"><i class="fa-solid fa-certificate text-warn me-2"></i><span data-i18n="certificate">Certificate</span></h5>
-        <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <div id="certificateArea">
-          <h2>Certificate of Achievement</h2>
-          <p style="color:#666;margin:0">Bengali Typing Proficiency</p>
-          <div class="cert-name" id="certName">—</div>
-          <p style="color:#555;margin:0">has successfully completed a Bengali typing assessment</p>
-          <div class="cert-metrics">
-            <div><b id="certWpm">0</b>WPM</div>
-            <div><b id="certAcc">0%</b>Accuracy</div>
-            <div><b id="certTests">0</b>Tests</div>
-          </div>
-          <p style="color:#888;font-size:.8rem;margin:0" id="certDate">—</p>
-          <p style="color:#3b2fa8;font-weight:700;margin-top:1rem;letter-spacing:.1em">BanglaTypingPro ULTRA</p>
-        </div>
-      </div>
-      <div class="modal-footer border-0 pt-0">
-        <button class="btn btn-outline" data-bs-dismiss="modal">Close</button>
-        <button class="btn btn-accent" id="btnPrintCert"><i class="fa-solid fa-print me-1"></i>Print / Save as PDF</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div id="toastHost"></div>
-
-<!-- ============================================================
-     EXTERNAL LIBRARIES
-     ============================================================ -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
-
-<script>
-/* ================================================================
-   BANGLATYPINGPRO ULTRA — APPLICATION CORE
-   ----------------------------------------------------------------
-   Sections:
-     1. Utilities
-     2. Persistent store (localStorage)
-     3. i18n
-     4. Layout definitions (phonetic + direct layouts)
-     5. Avro-style phonetic transliteration engine
-     6. Typing engine (metrics, rendering, timer)
-     7. Virtual keyboard (rendering, highlighting, heatmap)
-     8. Bot race simulation
-     9. Achievements
-    10. View rendering (dashboard, lessons, analytics, settings…)
-    11. Event wiring & boot
-   ================================================================ */
-
-/* ================================================================
-   1. UTILITIES
-   ================================================================ */
-const $  = (sel, root = document) => root.querySelector(sel);
-const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
-
-const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-
-const escapeHtml = (s) => String(s).replace(/[&<>"']/g, c => (
-  { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]
-));
-
-/** Grapheme segmentation.
- *  Bengali conjuncts (যুক্তাক্ষর) are multi-codepoint clusters, e.g. "ক্ষ" =
- *  ক + ্ + ষ. Splitting naively would break shaping, so we use Intl.Segmenter
- *  with 'grapheme' granularity which keeps clusters intact. */
-const graphemeSegmenter =
-  (typeof Intl !== 'undefined' && Intl.Segmenter) ? new Intl.Segmenter('bn', { granularity: 'grapheme' }) : null;
-
-function toGraphemes(str) {
-  if (!str) return [];
-  if (graphemeSegmenter) return Array.from(graphemeSegmenter.segment(str), s => s.segment);
-  return Array.from(str);
-}
-
-function fmtTime(sec) {
-  const m = Math.floor(sec / 60), s = Math.floor(sec % 60);
-  return `${m}:${String(s).padStart(2, '0')}`;
-}
-
-function dateKey(d = new Date()) {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
-
-function toast(msg, ms = 3200) {
-  const host = $('#toastHost');
-  const el = document.createElement('div');
-  el.className = 'btp-toast';
-  el.innerHTML = msg;
-  host.appendChild(el);
-  setTimeout(() => {
-    el.style.transition = 'opacity .3s, transform .3s';
-    el.style.opacity = '0';
-    el.style.transform = 'translateX(120%)';
-    setTimeout(() => el.remove(), 320);
-  }, ms);
-}
-
-/* ---- Web-Audio mechanical click (no external asset needed) ---- */
-let audioCtx = null;
-function playClick(freq = 640) {
-  if (!DB.settings.sound) return;
-  try {
-    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
-    const o = audioCtx.createOscillator();
-    const g = audioCtx.createGain();
-    o.type = 'square';
-    o.frequency.value = freq + Math.random() * 90;
-    g.gain.setValueAtTime(0.035, audioCtx.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.055);
-    o.connect(g).connect(audioCtx.destination);
-    o.start();
-    o.stop(audioCtx.currentTime + 0.06);
-  } catch (_) { /* audio may be blocked before user gesture */ }
-}
-
-function fireConfetti() {
-  if (typeof confetti !== 'function') return;
-  confetti({ particleCount: 160, spread: 90, origin: { y: 0.62 }, zIndex: 10000 });
-  setTimeout(() => confetti({ particleCount: 90, spread: 120, origin: { y: 0.5 }, zIndex: 10000 }), 320);
-}
-
-/* ================================================================
-   2. PERSISTENT STORE
-   ----------------------------------------------------------------
-   Everything lives under one localStorage key. The object is small and
-   flat, so a shallow merge with defaults is safe and enough for upgrades.
-   ================================================================ */
-const STORE_KEY = 'banglatypingpro_ultra_v1';
-
-const DEFAULTS = {
-  profile:  { name: '', avatar: '🐯', joined: null },
-  settings: {
-    theme: 'dark',        // 'dark' | 'light'
-    layout: 'phonetic',   // phonetic | bijoy | jatiya | native
-    lang: 'en',           // ui language
-    sound: false,
-    fontScale: 1,
-    showKeyboard: true,
-    showFinger: true
-  },
-  stats:    { tests: 0, totalSeconds: 0, bestWpm: 0, bestAcc: 0 },
-  history:  [],   // [{t, wpm, acc, mode, secs}]
-  keyErrors:{},   // { grapheme: count }
-  days:     [],   // ['YYYY-MM-DD', ...]
-  achievements: {} // { id: timestamp }
-};
-
-let DB = loadDB();
-
-function loadDB() {
-  try {
-    const raw = localStorage.getItem(STORE_KEY);
-    if (!raw) return structuredClone(DEFAULTS);
-    const parsed = JSON.parse(raw);
-    // shallow-merge each top-level bucket so new keys get defaults
-    return {
-      profile:   { ...DEFAULTS.profile,   ...(parsed.profile   || {}) },
-      settings:  { ...DEFAULTS.settings,  ...(parsed.settings  || {}) },
-      stats:     { ...DEFAULTS.stats,     ...(parsed.stats     || {}) },
-      history:   Array.isArray(parsed.history)   ? parsed.history   : [],
-      keyErrors: parsed.keyErrors || {},
-      days:      Array.isArray(parsed.days)      ? parsed.days      : [],
-      achievements: parsed.achievements || {}
-    };
-  } catch (err) {
-    console.warn('[BTP] Failed to load store, starting fresh.', err);
-    return structuredClone(DEFAULTS);
-  }
-}
-
-function saveDB() {
-  try { localStorage.setItem(STORE_KEY, JSON.stringify(DB)); }
-  catch (err) { console.warn('[BTP] Could not persist state.', err); }
-}
-
-/* ================================================================
-   3. i18n
-   ================================================================ */
-const I18N = {
-  en: {
-    nav_dashboard:'Dashboard', nav_practice:'Practice', nav_lessons:'Lessons',
-    nav_keyboard:'Keyboard', nav_analytics:'Analytics', nav_achievements:'Achievements',
-    nav_settings:'Settings', best_wpm:'Best WPM', best_acc:'Best Accuracy',
-    practice_time:'Practice Time', day_streak:'Day Streak', quick_start:'Quick Start',
-    active_layout:'Active Layout', profile_name:'Your Name', streak_calendar:'Streak Calendar',
-    last_30_days:'Last 30 days', recent_tests:'Recent Tests', col_date:'Date', col_mode:'Mode',
-    col_wpm:'WPM', col_acc:'Accuracy', col_dur:'Duration', no_tests:'No tests yet — take your first test!',
-    restart:'Restart', focus:'Focus', sound:'Sound', custom:'Custom', race:'Race',
-    accuracy:'Accuracy', time:'Time', errors:'Errors', chars:'Chars', progress:'Progress',
-    virtual_kb:'Virtual Keyboard', curriculum:'Structured Curriculum',
-    curriculum_sub:'Five progressive modules — from single letters to full paragraphs.',
-    custom_lesson:'Custom Lesson', custom_hint:'Paste any Bengali text below to practise typing it.',
-    layout_guide:'Layout & Finger Guide',
-    layout_sub:'Colour bars show which finger presses each key. Heat colours show your weak keys.',
-    weak_keys:'Weak Keys (Heatmap)',
-    weak_hint:'Keys with the most mistakes are highlighted in red on the virtual keyboard above.',
-    wpm_trend:'WPM Trend (last 30 tests)', acc_trend:'Accuracy Trend',
-    mode_split:'Tests by Mode', error_breakdown:'Error Breakdown',
-    achievements:'Achievements',
-    achievements_sub:'Unlock badges by hitting speed, accuracy and consistency milestones.',
-    get_certificate:'Get Certificate', profile:'Profile', avatar:'Avatar',
-    preferences:'Preferences', layout:'Typing Layout', language:'Interface Language',
-    keyboard_sound:'Mechanical Key Sound', show_kb:'Show Virtual Keyboard',
-    show_finger:'Finger Guide Colours', font_size:'Text Size',
-    data_mgmt:'Data Management', export:'Export Progress (JSON)', import:'Import Progress',
-    reset:'Reset All Data', shortcuts:'Keyboard shortcuts:', sc_restart:'restart',
-    sc_exit:'exit focus mode', sc_kb:'toggle keyboard', certificate:'Certificate',
-    module:'Module'
-  },
-  bn: {
-    nav_dashboard:'ড্যাশবোর্ড', nav_practice:'অনুশীলন', nav_lessons:'পাঠ',
-    nav_keyboard:'কিবোর্ড', nav_analytics:'বিশ্লেষণ', nav_achievements:'অর্জন',
-    nav_settings:'সেটিংস', best_wpm:'সেরা WPM', best_acc:'সেরা নির্ভুলতা',
-    practice_time:'অনুশীলনের সময়', day_streak:'দিনের ধারা', quick_start:'দ্রুত শুরু',
-    active_layout:'সক্রিয় লেআউট', profile_name:'আপনার নাম', streak_calendar:'স্ট্রিক ক্যালেন্ডার',
-    last_30_days:'শেষ ৩০ দিন', recent_tests:'সাম্প্রতিক টেস্ট', col_date:'তারিখ', col_mode:'মোড',
-    col_wpm:'WPM', col_acc:'নির্ভুলতা', col_dur:'সময়', no_tests:'এখনো কোনো টেস্ট নেই — প্রথম টেস্ট দিন!',
-    restart:'পুনরায়', focus:'ফোকাস', sound:'শব্দ', custom:'কাস্টম', race:'দৌড়',
-    accuracy:'নির্ভুলতা', time:'সময়', errors:'ভুল', chars:'অক্ষর', progress:'অগ্রগতি',
-    virtual_kb:'ভার্চুয়াল কিবোর্ড', curriculum:'সুসংগঠিত পাঠক্রম',
-    curriculum_sub:'পাঁচটি ধাপ — বর্ণ থেকে অনুচ্ছেদ পর্যন্ত।',
-    custom_lesson:'কাস্টম পাঠ', custom_hint:'নিচে যেকোনো বাংলা টেক্সট পেস্ট করে অনুশীলন করুন।',
-    layout_guide:'লেআউট ও আঙুল নির্দেশিকা',
-    layout_sub:'রঙিন বার দেখায় কোন আঙুল দিয়ে কোন কী চাপবেন।',
-    weak_keys:'দুর্বল কী (হিটম্যাপ)',
-    weak_hint:'যেসব কী-তে বেশি ভুল হয় সেগুলো লাল রঙে দেখানো হয়েছে।',
-    wpm_trend:'WPM প্রবণতা (শেষ ৩০ টেস্ট)', acc_trend:'নির্ভুলতা প্রবণতা',
-    mode_split:'মোড অনুযায়ী টেস্ট', error_breakdown:'ভুলের বিশ্লেষণ',
-    achievements:'অর্জন',
-    achievements_sub:'গতি, নির্ভুলতা ও নিয়মিত অনুশীলনে ব্যাজ আনলক করুন।',
-    get_certificate:'সার্টিফিকেট নিন', profile:'প্রোফাইল', avatar:'অ্যাভাটার',
-    preferences:'পছন্দসমূহ', layout:'টাইপিং লেআউট', language:'ইন্টারফেস ভাষা',
-    keyboard_sound:'কীবোর্ড শব্দ', show_kb:'ভার্চুয়াল কিবোর্ড দেখান',
-    show_finger:'আঙুলের রঙ', font_size:'টেক্সট আকার',
-    data_mgmt:'ডেটা ব্যবস্থাপনা', export:'প্রোগ্রেস এক্সপোর্ট (JSON)', import:'প্রোগ্রেস ইমপোর্ট',
-    reset:'সব ডেটা মুছুন', shortcuts:'কীবোর্ড শর্টকাট:', sc_restart:'পুনরায় শুরু',
-    sc_exit:'ফোকাস মোড বন্ধ', sc_kb:'কিবোর্ড টগল', certificate:'সার্টিফিকেট',
-    module:'মডিউল'
-  }
-};
-
-function t(key) {
-  const dict = I18N[DB.settings.lang] || I18N.en;
-  return dict[key] !== undefined ? dict[key] : (I18N.en[key] !== undefined ? I18N.en[key] : key);
-}
-
-function applyI18n() {
-  $$('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
-  $('#btnLang').textContent = DB.settings.lang === 'en' ? 'বাং' : 'EN';
-}
-
-/* ================================================================
-   4. LAYOUT DEFINITIONS
-   ----------------------------------------------------------------
-   • phonetic → Avro-style transliteration (type Latin, get Bengali)
-   • bijoy / jatiya → DIRECT maps: physical key code → Bengali glyph
-   • native  → the OS IME handles input; we just read the textarea value
-
-   NOTE: The Bijoy / Jatiya tables below are *reference templates* for a
-   standard Bengali keyboard. Real Bijoy drivers already emit Unicode, so
-   if you use one, pick "System / Native IME". You can freely edit the
-   tables below to match your own physical keyboard.
-   ================================================================ */
-
-const JATIYA_MAP = {
-  /* ---- number row: Bengali digits, shifted = rare letters ---- */
-  Digit1:{ base:'১', shift:'অ' }, Digit2:{ base:'২', shift:'ই' },
-  Digit3:{ base:'৩', shift:'উ' }, Digit4:{ base:'৪', shift:'ষ' },
-  Digit5:{ base:'৫', shift:'ঁ' }, Digit6:{ base:'৬', shift:'ঃ' },
-  Digit7:{ base:'৭' }, Digit8:{ base:'৮' }, Digit9:{ base:'৯' }, Digit0:{ base:'০' },
-  Minus:{ base:'-' }, Equal:{ base:'=' },
-
-  /* ---- top row ---- */
-  KeyQ:{ base:'ূ', shift:'ঔ' }, KeyW:{ base:'দ', shift:'ধ' },
-  KeyE:{ base:'ে', shift:'এ' }, KeyR:{ base:'র', shift:'ৃ' },
-  KeyT:{ base:'ট', shift:'ঠ' }, KeyY:{ base:'ু', shift:'ঊ' },
-  KeyU:{ base:'ি', shift:'ঈ' }, KeyI:{ base:'ো', shift:'ঐ' },
-  KeyO:{ base:'প', shift:'ও' }, KeyP:{ base:'ৈ', shift:'ঞ' },
-  BracketLeft:{ base:'[' }, BracketRight:{ base:']' }, Backslash:{ base:'\\' },
-
-  /* ---- home row ---- */
-  KeyA:{ base:'া', shift:'আ' }, KeyS:{ base:'স', shift:'শ' },
-  KeyD:{ base:'ড', shift:'ঢ' }, KeyF:{ base:'ফ', shift:'থ' },
-  KeyG:{ base:'গ', shift:'ঘ' }, KeyH:{ base:'হ', shift:'ং' },
-  KeyJ:{ base:'জ', shift:'ঝ' }, KeyK:{ base:'ক', shift:'খ' },
-  KeyL:{ base:'ল', shift:'ঙ' }, Semicolon:{ base:'্', shift:'য়' },
-  Quote:{ base:"'", shift:'"' },
-
-  /* ---- bottom row ---- */
-  KeyZ:{ base:'য', shift:'ঋ' }, KeyX:{ base:'ড়', shift:'ঢ়' },
-  KeyC:{ base:'চ', shift:'ছ' }, KeyV:{ base:'ভ', shift:'ৎ' },
-  KeyB:{ base:'ব', shift:'ঁ' }, KeyN:{ base:'ন', shift:'ণ' },
-  KeyM:{ base:'ম', shift:'ং' },
-  Comma:{ base:',' }, Period:{ base:'.' }, Slash:{ base:'ঃ' },
-  Space:{ base:' ' }
-};
-
-/* A second reference arrangement so the layout toggle is meaningful.
-   In this template the vowel signs sit on the shifted layer. */
-const BIJOY_MAP = {
-  Digit1:{ base:'১', shift:'!' }, Digit2:{ base:'২', shift:'@' },
-  Digit3:{ base:'৩', shift:'#' }, Digit4:{ base:'৪', shift:'$' },
-  Digit5:{ base:'৫', shift:'%' }, Digit6:{ base:'৬', shift:'^' },
-  Digit7:{ base:'৭', shift:'&' }, Digit8:{ base:'৮', shift:'*' },
-  Digit9:{ base:'৯', shift:'(' }, Digit0:{ base:'০', shift:')' },
-
-  KeyQ:{ base:'দ', shift:'ধ' }, KeyW:{ base:'ূ', shift:'ঊ' },
-  KeyE:{ base:'ে', shift:'এ' }, KeyR:{ base:'র', shift:'ৃ' },
-  KeyT:{ base:'ট', shift:'ঠ' }, KeyY:{ base:'ু', shift:'উ' },
-  KeyU:{ base:'ি', shift:'ই' }, KeyI:{ base:'ো', shift:'ও' },
-  KeyO:{ base:'প', shift:'ফ' }, KeyP:{ base:'[', shift:'{' },
-  BracketLeft:{ base:']' }, BracketRight:{ base:'\\' },
-
-  KeyA:{ base:'া', shift:'আ' }, KeyS:{ base:'স', shift:'শ' },
-  KeyD:{ base:'ড', shift:'ঢ' }, KeyF:{ base:'ি', shift:'ঈ' },
-  KeyG:{ base:'গ', shift:'ঘ' }, KeyH:{ base:'হ', shift:'ঃ' },
-  KeyJ:{ base:'জ', shift:'ঝ' }, KeyK:{ base:'ক', shift:'খ' },
-  KeyL:{ base:'ল', shift:'ঙ' }, Semicolon:{ base:'্', shift:'য়' },
-  Quote:{ base:"'", shift:'"' },
-
-  KeyZ:{ base:'য', shift:'য়' }, KeyX:{ base:'ড়', shift:'ঢ়' },
-  KeyC:{ base:'চ', shift:'ছ' }, KeyV:{ base:'ভ', shift:'ৎ' },
-  KeyB:{ base:'ব', shift:'ঁ' }, KeyN:{ base:'ন', shift:'ণ' },
-  KeyM:{ base:'ম', shift:'ং' },
-  Comma:{ base:',' }, Period:{ base:'.' }, Slash:{ base:'ঃ' },
-  Space:{ base:' ' }
-};
-
-const LAYOUTS = {
-  phonetic: { id:'phonetic', label:{ en:'Avro Phonetic', bn:'অভ্র ফোনেটিক' }, kind:'translit' },
-  jatiya:   { id:'jatiya',   label:{ en:'National (Jatiya)', bn:'জাতীয় কিবোর্ড' }, kind:'direct', map: JATIYA_MAP },
-  bijoy:    { id:'bijoy',    label:{ en:'Bijoy Classic', bn:'বিজয় ক্লাসিক' }, kind:'direct', map: BIJOY_MAP },
-  native:   { id:'native',   label:{ en:'System / Native IME', bn:'সিস্টেম আইএমই' }, kind:'native' }
-};
-
-function currentLayout() { return LAYOUTS[DB.settings.layout] || LAYOUTS.phonetic; }
-
-/* ================================================================
-   5. AVRO-STYLE PHONETIC TRANSLITERATION ENGINE
-   ----------------------------------------------------------------
-   Strategy: buffer Latin keystrokes in `pending`. On every new letter we
-   try to match the LONGEST token at the head of the buffer. A token is only
-   committed when it can no longer be extended by another token (e.g. "k"
-   waits, because "kh"/"kkh" exist). Non-letter input flushes the buffer.
-
-   Bengali shaping rules applied:
-     • consonant followed by consonant  → insert hasanta ্
-     • vowel after consonant / kar      → use the kar (matra) form
-     • vowel at word start              → independent vowel form
-   ================================================================ */
-const PHONETIC = (() => {
-  /* Consonant tokens → Bengali consonant */
-  const CONS = [
-    ['ksh','ক্ষ'], ['kkh','ক্ষ'], ['kSh','ক্ষ'],
-    ['gg','জ্ঞ'], ['NGG','জ্ঞ'],
-    ['chh','ছ'], ['Chh','ছ'], ['ch','চ'], ['Ch','ছ'],
-    ['kh','খ'], ['gh','ঘ'], ['Ng','ঙ'],
-    ['jh','ঝ'], ['Th','ঠ'], ['Dh','ঢ'],
-    ['th','থ'], ['dh','ধ'], ['ph','ফ'], ['bh','ভ'],
-    ['sh','শ'], ['Sh','ষ'], ['Rh','ঢ়'],
-    ['T','ট'], ['D','ড'], ['N','ণ'],
-    ['t','ত'], ['d','দ'], ['n','ন'],
-    ['p','প'], ['f','ফ'], ['b','ব'], ['v','ভ'], ['m','ম'],
-    ['z','য'], ['r','র'], ['l','ল'],
-    ['S','শ'], ['s','স'], ['h','হ'],
-    ['y','য়'], ['Y','য়'], ['R','ড়'],
-    ['k','ক'], ['g','গ'], ['c','চ'], ['j','জ'],
-    ['x','ক্স'], ['q','ক'], ['w','ও']
-  ];
-
-  /* Vowel tokens → independent Bengali vowel */
-  const VOWELS = [
-    ['aa','আ'], ['A','আ'], ['a','অ'],
-    ['ii','ঈ'], ['I','ঈ'], ['i','ই'],
-    ['uu','ঊ'], ['U','ঊ'], ['u','উ'],
-    ['ri','ঋ'], ['e','এ'], ['oi','ঐ'],
-    ['o','ও'], ['ou','ঔ'], ['O','ঔ']
-  ];
-
-  /* independent vowel → kar (matra) form */
-  const KAR = {
-    'অ':'', 'আ':'া', 'ই':'ি', 'ঈ':'ী', 'উ':'ু', 'ঊ':'ূ',
-    'ঋ':'ৃ', 'এ':'ে', 'ঐ':'ৈ', 'ও':'ো', 'ঔ':'ৌ'
-  };
-
-  const CONSONANT_SET = new Set(CONS.map(c => c[1]));
-  const VOWEL_SET     = new Set(Object.keys(KAR));
-  const KAR_SET       = new Set(Object.values(KAR).filter(Boolean));
-
-  // Longest-first token list so greedy matching picks "kkh" before "k".
-  const TOKENS = [...CONS, ...VOWELS].sort((a, b) => b[0].length - a[0].length);
-
-  const isConsonant = ch => CONSONANT_SET.has(ch);
-  const isKar       = ch => KAR_SET.has(ch);
-
-  return {
-    pending: '',
-    prev: '',          // last Bengali char emitted (for shaping decisions)
-    tokenMap: new Map([...CONS, ...VOWELS]),
-
-    reset() { this.pending = ''; this.prev = ''; },
-
-    /** Feed one Latin character (or flush on non-letter). Returns Bengali output. */
-    feed(ch) {
-      if (/^[a-zA-Z]$/.test(ch)) {
-        this.pending += ch;
-        return this._process(false);
-      }
-      // Non-letter → flush whatever is buffered, then pass the char through.
-      let out = this._process(true);
-      this.pending = '';
-      out += ch;
-      this.prev = ch;
-      return out;
-    },
-
-    _process(flush) {
-      let out = '';
-      let guard = 0;
-      while (this.pending.length && guard++ < 64) {
-        // longest token matching the head of the buffer
-        let best = null;
-        for (const [key] of TOKENS) {
-          if (this.pending.startsWith(key) && (!best || key.length > best.length)) best = key;
-        }
-        if (!best) { // unknown char — emit literally
-          out += this.pending[0];
-          this.prev = this.pending[0];
-          this.pending = this.pending.slice(1);
-          continue;
-        }
-        // If the match is the whole buffer but a longer token could still
-        // extend it, wait for the next keystroke (unless we're flushing).
-        if (!flush && best.length === this.pending.length &&
-            TOKENS.some(([k]) => k.length > best.length && k.startsWith(best))) {
-          break;
-        }
-        out += this._emit(best);
-        this.pending = this.pending.slice(best.length);
-      }
-      return out;
-    },
-
-    _emit(token) {
-      const glyph = this.tokenMap.get(token);
-      let out = '';
-
-      if (VOWEL_SET.has(glyph)) {
-        // vowel: kar after a consonant/kar, independent form otherwise
-        out = (isConsonant(this.prev) || isKar(this.prev)) ? KAR[glyph] : glyph;
-      } else if (isConsonant(glyph)) {
-        // consonant cluster → automatic hasanta between consonants
-        out = isConsonant(this.prev) ? '\u09CD' + glyph : glyph;
-      } else {
-        out = glyph;
-      }
-
-      if (out) this.prev = out[out.length - 1];
-      return out;
-    }
-  };
-})();
-
-/* ================================================================
-   6. TYPING ENGINE
-   ================================================================ */
-const PRACTICE_TEXTS = [
-  'বাংলা ভাষা পৃথিবীর সবচেয়ে মধুর ও সমৃদ্ধ ভাষাগুলোর একটি। এই ভাষায় রচিত হয়েছে অসংখ্য কবিতা, গান ও সাহিত্যকর্ম।',
-  'শিক্ষা জাতির মেরুদণ্ড। শিক্ষিত মানুষ সমাজের উন্নয়নে গুরুত্বপূর্ণ ভূমিকা পালন করে। তাই আমাদের সবার উচিত নিয়মিত পড়াশোনা করা।',
-  'কম্পিউটারে দ্রুত ও নির্ভুলভাবে বাংলা টাইপ করা একটি গুরুত্বপূর্ণ দক্ষতা। নিয়মিত অনুশীলনের মাধ্যমে এই দক্ষতা অর্জন করা সম্ভব।',
-  'প্রকৃতির মাঝে বসবাস করলে মন ভালো থাকে। সকালের সূর্যোদয়, পাখির ডাক আর নদীর কলতান মানুষকে সজীব করে তোলে।',
-  'বিজ্ঞান ও প্রযুক্তির অগ্রগতির ফলে পৃথিবী আজ হাতের মুঠোয়। তথ্যপ্রযুক্তির এই যুগে কম্পিউটার শিক্ষা অপরিহার্য।',
-  'আমি বাংলায় গান গাই, আমি বাংলার গান গাই। আমি আমার আমিকে চিরদিন এই বাংলায় খুঁজে পাই।'
-];
-
-const Engine = {
-  /* --- configuration --- */
-  target: '',
-  targetG: [],
-  typed: '',
-  mode: 'timed',        // timed | endless | lesson
-  duration: 60,         // seconds (0 = endless)
-  raceEnabled: false,
-
-  /* --- runtime --- */
-  running: false,
-  startedAt: 0,
-  elapsed: 0,
-  timerId: null,
-  finalElapsed: 0,
-  finished: false,
-
-  /* ---- set up a new test ---- */
-  start(opts = {}) {
-    const text = (opts.text && opts.text.trim()) ? opts.text.trim() : pickPracticeText();
-    this.target = text;
-    this.targetG = toGraphemes(text);
-    this.typed = '';
-    this.duration = opts.duration !== undefined ? opts.duration : parseInt($('#selMode').value, 10);
-    this.mode = this.duration === 0 ? 'endless' : 'timed';
-    if (opts.mode) this.mode = opts.mode;
-    this.raceEnabled = !!opts.race;
-    this.running = false;
-    this.finished = false;
-    this.startedAt = 0;
-    this.elapsed = 0;
-    this.finalElapsed = 0;
-
-    PHONETIC.reset();
-    $('#nativeInput').value = '';
-    $('#nativeInput').readOnly = false;
-
-    this.renderTarget();
-    this.updateStats();
-    this.focusInput();
-
-    // Race bot setup
-    if (this.raceEnabled) {
-      $('#raceArea').classList.remove('d-none');
-      Race.begin(this.targetG.length, parseInt($('#selBot').value, 10));
-    } else {
-      $('#raceArea').classList.add('d-none');
-      Race.stop();
-    }
-    this.updateKeyboardLabels();
-  },
-
-  /* ---- build the span-per-grapheme display ---- */
-  renderTarget() {
-    const host = $('#textDisplay');
-    host.innerHTML = '';
-    const frag = document.createDocumentFragment();
-    this.targetG.forEach(g => {
-      const span = document.createElement('span');
-      span.className = 'ch';
-      span.textContent = g;      // container uses white-space:pre-wrap
-      frag.appendChild(span);
-    });
-    host.appendChild(frag);
-    host.scrollTop = 0;
-    this.updateVisual();
-  },
-
-  /* ---- paint correct / wrong / current ---- */
-  updateVisual() {
-    const host = $('#textDisplay');
-    const spans = host.children;
-    if (!spans.length) return;
-
-    const typedG = toGraphemes(this.typed);
-
-    for (let i = 0; i < spans.length; i++) {
-      const el = spans[i];
-      let cls = 'ch';
-      if (i < typedG.length) {
-        cls += (typedG[i] === this.targetG[i]) ? ' correct' : ' wrong';
-      } else if (i === typedG.length) {
-        cls += ' current';
-      }
-      if (el.className !== cls) el.className = cls;
-    }
-
-    // keep the cursor line in view
-    const cursor = spans[Math.min(typedG.length, spans.length - 1)];
-    if (cursor) {
-      const top = cursor.offsetTop;
-      if (top < host.scrollTop + 24) host.scrollTop = Math.max(0, top - 24);
-      else if (top > host.scrollTop + host.clientHeight - 56)
-        host.scrollTop = top - host.clientHeight + 56;
-    }
-  },
-
-  /* ---- compute live metrics ---- */
-  computeMetrics() {
-    const typedG = toGraphemes(this.typed);
-    let correct = 0;
-    for (let i = 0; i < typedG.length; i++) {
-      if (typedG[i] === this.targetG[i]) correct++;
-    }
-    const elapsed = this.running
-      ? (performance.now() - this.startedAt) / 1000
-      : (this.finalElapsed || 0);
-
-    const minutes = elapsed / 60;
-    const wpm  = minutes > 0 ? Math.round((correct / 5) / minutes) : 0;
-    const rawWpm = minutes > 0 ? Math.round((typedG.length / 5) / minutes) : 0;
-    const acc  = typedG.length ? Math.round((correct / typedG.length) * 100) : 100;
-
-    return {
-      typedG, correct,
-      errors: Math.max(0, typedG.length - correct),
-      elapsed, wpm, rawWpm, acc,
-      progress: this.targetG.length ? clamp((typedG.length / this.targetG.length) * 100, 0, 100) : 0
-    };
-  },
-
-  updateStats() {
-    const m = this.computeMetrics();
-    $('#liveWpm').textContent   = m.wpm;
-    $('#liveAcc').textContent   = m.acc + '%';
-    $('#liveErr').textContent   = m.errors;
-    $('#liveChars').textContent = m.typedG.length;
-    $('#liveProg').textContent  = Math.round(m.progress) + '%';
-
-    const timeEl = $('#liveTime');
-    if (this.mode === 'timed') {
-      const left = Math.max(0, this.duration - m.elapsed);
-      timeEl.textContent = fmtTime(left);
-    } else {
-      timeEl.textContent = fmtTime(m.elapsed);
-    }
-
-    if (this.raceEnabled) {
-      $('#raceUser').style.width = m.progress + '%';
-    }
-  },
-
-  /* ---- begin timing on first keystroke ---- */
-  _ensureStarted() {
-    if (this.running) return;
-    this.running = true;
-    this.startedAt = performance.now();
-    this.timerId = setInterval(() => {
-      this.updateStats();
-      const m = this.computeMetrics();
-      if (this.mode === 'timed' && m.elapsed >= this.duration) this.finish();
-      if (this.raceEnabled) Race.update(this.targetG.length);
-    }, 100);
-  },
-
-  /* ---- insert Bengali text produced by the active layout ---- */
-  insert(str) {
-    if (!this.running && this.finished) return;
-    if (!str) return;
-    if (!this.running) this._ensureStarted();
-
-    this.typed += str;
-    this.updateVisual();
-    this.updateStats();
-
-    // Lesson / custom mode: finish when text is fully typed
-    if (this.mode === 'lesson' && toGraphemes(this.typed).length >= this.targetG.length) {
-      this.finish();
-    }
-  },
-
-  backspace() {
-    if (!this.running || this.mode === 'native') return;
-    if (this.typed.length === 0) return;
-    const g = toGraphemes(this.typed);
-    g.pop();
-    this.typed = g.join('');
-    PHONETIC.reset();
-    this.updateVisual();
-    this.updateStats();
-  },
-
-  /* ---- finish the test and persist results ---- */
-  finish() {
-    if (this.finished) return;
-    this.finished = true;
-    this.running = false;
-    clearInterval(this.timerId);
-    Race.stop();
-
-    const m = this.computeMetrics();
-    this.finalElapsed = m.elapsed;
-
-    const isNewBest = m.wpm > DB.stats.bestWpm && m.wpm > 0;
-
-    /* ---- persist session ---- */
-    DB.history.push({
-      t: Date.now(),
-      wpm: m.wpm,
-      acc: m.acc,
-      mode: this.mode,
-      secs: Math.round(m.elapsed)
-    });
-    if (DB.history.length > 500) DB.history.shift();
-
-    DB.stats.tests += 1;
-    DB.stats.totalSeconds += Math.round(m.elapsed);
-    DB.stats.bestWpm = Math.max(DB.stats.bestWpm, m.wpm);
-    DB.stats.bestAcc = Math.max(DB.stats.bestAcc, m.acc);
-
-    /* ---- key error heat map: record mismatched target graphemes ---- */
-    m.typedG.forEach((g, i) => {
-      if (i < this.targetG.length && g !== this.targetG[i]) {
-        const key = this.targetG[i];
-        DB.keyErrors[key] = (DB.keyErrors[key] || 0) + 1;
-      }
-    });
-
-    /* ---- streak ---- */
-    const today = dateKey();
-    if (!DB.days.includes(today)) DB.days.push(today);
-
-    saveDB();
-    checkAchievements();
-    renderAll();
-
-    /* ---- show results ---- */
-    $('#resWpm').textContent = m.wpm;
-    $('#resAcc').textContent = m.acc + '%';
-    $('#resErr').textContent = m.errors;
-    $('#resultTitle').textContent = isNewBest ? '🎉 New Personal Best!' : 'Test Complete!';
-    $('#resultSubtitle').textContent = isNewBest
-      ? `You beat your record with ${m.wpm} WPM!`
-      : `${m.wpm} WPM · ${m.acc}% accuracy`;
-
-    new bootstrap.Modal($('#resultModal')).show();
-    if (isNewBest && m.wpm > 0) fireConfetti();
-  },
-
-  focusInput() {
-    const ta = $('#nativeInput');
-    ta.focus({ preventScroll: true });
-  },
-
-  /* ---- keyboard handling ---- */
-  handleKeyDown(e) {
-    if (!this.running && this.finished) return;
-
-    // let global shortcuts through
-    if (e.ctrlKey || e.metaKey || e.altKey) return;
-
-    const layout = currentLayout();
-
-    /* Native IME: let the browser/OS handle everything. We read the value
-       from the `input` event instead. */
-    if (layout.kind === 'native') {
-      if (!this.running && e.key.length === 1) this._ensureStarted();
-      return;
-    }
-
-    if (e.key === 'Backspace') {
-      e.preventDefault();
-      this.backspace();
-      playClick(420);
-      return;
-    }
-    if (e.key === 'Tab' || e.key === 'Enter' && layout.kind !== 'direct') {
-      // let Tab move focus; treat Enter as a newline only in custom texts
-      if (e.key === 'Tab') return;
-    }
-    if (e.key.length !== 1) return;
-
-    e.preventDefault();
-
-    if (layout.kind === 'translit') {
-      const out = PHONETIC.feed(e.key);
-      if (!this.running) this._ensureStarted();
-      if (out) this.insertRaw(out);
-      playClick(660);
-      highlightKey(e.code);
-    } else if (layout.kind === 'direct') {
-      const entry = layout.map[e.code];
-      if (!entry) return;
-      const glyph = e.shiftKey ? (entry.shift !== undefined ? entry.shift : entry.base) : entry.base;
-      if (glyph === undefined) return;
-      if (!this.running) this._ensureStarted();
-      this.insertRaw(glyph);
-      playClick(660);
-      highlightKey(e.code);
-    }
-  },
-
-  /** insertRaw bypasses the "already finished" guard for the first key */
-  insertRaw(str) {
-    if (this.finished) return;
-    this.insert(str);
-  }
-};
-
-function pickPracticeText() {
-  return PRACTICE_TEXTS[Math.floor(Math.random() * PRACTICE_TEXTS.length)];
-}
-
-/* Native-IME input mirroring */
-$('#nativeInput').addEventListener('input', (e) => {
-  if (currentLayout().kind !== 'native') return;
-  if (!Engine.running) {
-    if (e.target.value.length === 0) return;
-    Engine._ensureStarted();
-  }
-  Engine.typed = e.target.value;
-  Engine.updateVisual();
-  Engine.updateStats();
-  if (Engine.mode === 'lesson' && toGraphemes(Engine.typed).length >= Engine.targetG.length) {
-    Engine.finish();
-  }
-});
-
-/* ================================================================
-   7. VIRTUAL KEYBOARD
-   ================================================================ */
-const KB_ROWS = [
-  ['Backquote','Digit1','Digit2','Digit3','Digit4','Digit5','Digit6','Digit7','Digit8','Digit9','Digit0','Minus','Equal','Backspace'],
-  ['Tab','KeyQ','KeyW','KeyE','KeyR','KeyT','KeyY','KeyU','KeyI','KeyO','KeyP','BracketLeft','BracketRight','Backslash'],
-  ['CapsLock','KeyA','KeyS','KeyD','KeyF','KeyG','KeyH','KeyJ','KeyK','KeyL','Semicolon','Quote','Enter'],
-  ['ShiftLeft','KeyZ','KeyX','KeyC','KeyV','KeyB','KeyN','KeyM','Comma','Period','Slash','ShiftRight'],
-  ['Space']
-];
-
-const PHYS_LABEL = {
-  Backquote:'`', Minus:'-', Equal:'=', BracketLeft:'[', BracketRight:']', Backslash:'\\',
-  Semicolon:';', Quote:"'", Comma:',', Period:'.', Slash:'/',
-  Backspace:'⌫', Tab:'Tab', CapsLock:'Caps', Enter:'⏎', ShiftLeft:'Shift', ShiftRight:'Shift', Space:'Space'
-};
-function physLabel(code) {
-  if (PHYS_LABEL[code]) return PHYS_LABEL[code];
-  if (code.startsWith('Key')) return code.slice(3);
-  if (code.startsWith('Digit')) return code.slice(5);
-  return code;
-}
-
-/* Standard touch-typing finger assignment */
-const KEY_FINGER = {
-  Backquote:'lp', Digit1:'lp', KeyQ:'lp', KeyA:'lp', KeyZ:'lp',
-  Digit2:'lr', KeyW:'lr', KeyS:'lr', KeyX:'lr',
-  Digit3:'lm', KeyE:'lm', KeyD:'lm', KeyC:'lm',
-  Digit4:'li', Digit5:'li', KeyR:'li', KeyT:'li', KeyF:'li', KeyG:'li', KeyV:'li', KeyB:'li',
-  Digit6:'ri', Digit7:'ri', KeyY:'ri', KeyU:'ri', KeyH:'ri', KeyJ:'ri', KeyN:'ri', KeyM:'ri',
-  Digit8:'rm', KeyI:'rm', KeyK:'rm', Comma:'rm',
-  Digit9:'rr', KeyO:'rr', KeyL:'rr', Period:'rr',
-  Digit0:'rp', KeyP:'rp', Semicolon:'rp', Quote:'rp', Slash:'rp',
-  Minus:'rp', Equal:'rp', BracketLeft:'rp', BracketRight:'rp', Backslash:'rp',
-  Space:'th'
-};
-
-const FINGER_NAMES = {
-  lp:'Left Pinky', lr:'Left Ring', lm:'Left Middle', li:'Left Index',
-  ri:'Right Index', rm:'Right Middle', rr:'Right Ring', rp:'Right Pinky', th:'Thumbs'
-};
-const FINGER_COLORS = {
-  lp:'#ef4444', lr:'#f59e0b', lm:'#22c55e', li:'#3b82f6',
-  ri:'#a855f7', rm:'#ec4899', rr:'#14b8a6', rp:'#eab308', th:'#64748b'
-};
-
-function wideClass(code) {
-  if (code === 'Backspace') return 'wide-2';
-  if (code === 'Tab') return 'wide-2';
-  if (code === 'CapsLock') return 'wide-2';
-  if (code === 'Enter') return 'wide-2';
-  if (code === 'ShiftLeft' || code === 'ShiftRight') return 'wide-3';
-  if (code === 'Space') return 'space';
-  return '';
-}
-
-/** Build a virtual keyboard into `host`. */
-function buildKeyboard(host, opts = {}) {
-  if (!host) return;
-  const layout = LAYOUTS[opts.layoutId || DB.settings.layout] || LAYOUTS.phonetic;
-  host.innerHTML = '';
-
-  KB_ROWS.forEach(row => {
-    const rowEl = document.createElement('div');
-    rowEl.className = 'kb-row';
-
-    row.forEach(code => {
-      const keyEl = document.createElement('div');
-      const finger = KEY_FINGER[code] || 'th';
-      keyEl.className = `kb-key ${opts.finger !== false ? 'f-' + finger : ''} ${wideClass(code)}`;
-      keyEl.dataset.code = code;
-
-      // Main label
-      let mainLabel = physLabel(code);
-      let shiftLabel = '';
-
-      if (layout.kind === 'direct' && layout.map && layout.map[code]) {
-        const entry = layout.map[code];
-        mainLabel = entry.base !== undefined ? entry.base : '';
-        shiftLabel = entry.shift !== undefined ? entry.shift : '';
-      }
-
-      const main = document.createElement('span');
-      main.textContent = mainLabel;
-      keyEl.appendChild(main);
-
-      if (shiftLabel) {
-        const sh = document.createElement('span');
-        sh.className = 'shift-char';
-        sh.textContent = shiftLabel;
-        keyEl.appendChild(sh);
-      }
-
-      rowEl.appendChild(keyEl);
-    });
-    host.appendChild(rowEl);
-  });
-
-  applyHeatmap(host);
-}
-
-/** Colour keys according to the stored error counts. */
-function applyHeatmap(host) {
-  const layout = currentLayout();
-  if (layout.kind !== 'direct') return; // heatmap needs a direct key→glyph map
-
-  const counts = Object.values(DB.keyErrors);
-  const max = counts.length ? Math.max(...counts) : 0;
-  if (max <= 0) return;
-
-  $$('.kb-key', host).forEach(keyEl => {
-    const entry = layout.map[keyEl.dataset.code];
-    if (!entry) return;
-    const err = DB.keyErrors[entry.base] || 0;
-    if (!err) return;
-    const ratio = err / max;
-    if (ratio > 0.66) keyEl.classList.add('heat-3');
-    else if (ratio > 0.33) keyEl.classList.add('heat-2');
-    else keyEl.classList.add('heat-1');
-  });
-}
-
-/** Flash a key when the matching physical key is pressed. */
-function highlightKey(code) {
-  ['#kbPractice', '#kbGuide'].forEach(sel => {
-    const host = $(sel);
-    if (!host) return;
-    const el = host.querySelector(`[data-code="${code}"]`);
-    if (!el) return;
-    el.classList.add('active');
-    setTimeout(() => el.classList.remove('active'), 110);
-  });
-}
-
-function updateKeyboardLabels() {
-  buildKeyboard($('#kbPractice'), { finger: DB.settings.showFinger });
-  buildKeyboard($('#kbGuide'), { layoutId: $('#selLayoutGuide').value, finger: DB.settings.showFinger });
-  renderFingerLegend('#fingerLegend');
-  renderFingerLegend('#fingerLegend2');
-  $('#keyboardHost').style.display = DB.settings.showKeyboard ? '' : 'none';
-}
-
-function renderFingerLegend(sel) {
-  const host = $(sel);
-  if (!host) return;
-  host.innerHTML = Object.entries(FINGER_NAMES).map(([k, name]) =>
-    `<span><span class="dot" style="background:${FINGER_COLORS[k]}"></span>${name}</span>`
-  ).join('');
-}
-
-/* ================================================================
-   8. BOT RACE
-   ================================================================ */
-const Race = {
-  botWpm: 35,
-  botChars: 0,
-  totalChars: 0,
-  intervalId: null,
-  finished: false,
-
-  begin(totalChars, botWpm) {
-    this.botWpm = botWpm;
-    this.botChars = 0;
-    this.totalChars = Math.max(1, totalChars);
-    this.finished = false;
-    $('#raceUser').style.width = '0%';
-    $('#raceBot').style.width = '0%';
-    $('#raceStatus').textContent = '';
-
-    clearInterval(this.intervalId);
-    // Bot advances at botWpm*5 characters per minute.
-    const charsPerTick = (this.botWpm * 5 / 60) * 0.1;
-    this.intervalId = setInterval(() => {
-      if (this.finished) return;
-      this.botChars += charsPerTick;
-      this.update(this.totalChars);
-      if (this.botChars >= this.totalChars && Engine.running) {
-        this.finished = true;
-        $('#raceStatus').innerHTML =
-          '<span class="text-bad">🤖 The bot finished first! Try again.</span>';
-      }
-    }, 100);
-  },
-
-  update(totalChars) {
-    const pct = clamp((this.botChars / Math.max(1, totalChars)) * 100, 0, 100);
-    $('#raceBot').style.width = pct + '%';
-    const userPct = Engine.computeMetrics().progress;
-    if (!this.finished) {
-      $('#raceStatus').textContent =
-        userPct >= pct ? '🏆 You are ahead!' : `🤖 Bot is ahead by ${Math.round(pct - userPct)}%`;
-    }
-  },
-
-  stop() {
-    clearInterval(this.intervalId);
-    this.intervalId = null;
-  }
-};
-
-/* ================================================================
-   9. ACHIEVEMENTS
-   ================================================================ */
-function streakDays() {
-  const set = new Set(DB.days);
-  let streak = 0;
-  const d = new Date();
-  while (set.has(dateKey(d))) {
-    streak++;
-    d.setDate(d.getDate() - 1);
-  }
-  return streak;
-}
-
-const ACHIEVEMENTS = [
-  { id:'first',   icon:'fa-flag-checkered', name:'First Steps',       desc:'Complete your first test',        test:() => DB.stats.tests >= 1 },
-  { id:'wpm20',   icon:'fa-bolt',           name:'Warming Up',        desc:'Reach 20 WPM',                    test:() => DB.stats.bestWpm >= 20 },
-  { id:'wpm30',   icon:'fa-gauge-high',     name:'Getting Fast',      desc:'Reach 30 WPM',                    test:() => DB.stats.bestWpm >= 30 },
-  { id:'wpm50',   icon:'fa-fire',           name:'Speed Demon',       desc:'Reach 50 WPM',                    test:() => DB.stats.bestWpm >= 50 },
-  { id:'wpm70',   icon:'fa-rocket',         name:'Keyboard Ninja',    desc:'Reach 70 WPM',                    test:() => DB.stats.bestWpm >= 70 },
-  { id:'acc90',   icon:'fa-crosshairs',     name:'Precision',         desc:'Finish with 90% accuracy',        test:() => DB.stats.bestAcc >= 90 },
-  { id:'acc98',   icon:'fa-bullseye',       name:'Accuracy Master',   desc:'Finish with 98% accuracy',        test:() => DB.stats.bestAcc >= 98 },
-  { id:'tests10', icon:'fa-repeat',         name:'Consistent',        desc:'Complete 10 tests',               test:() => DB.stats.tests >= 10 },
-  { id:'tests50', icon:'fa-medal',          name:'Dedicated',         desc:'Complete 50 tests',               test:() => DB.stats.tests >= 50 },
-  { id:'streak3', icon:'fa-calendar-day',   name:'On a Roll',         desc:'3-day practice streak',           test:() => streakDays() >= 3 },
-  { id:'streak7', icon:'fa-calendar-week',  name:'Week Warrior',      desc:'7-day practice streak',           test:() => streakDays() >= 7 },
-  { id:'time1h',  icon:'fa-hourglass-half', name:'One Hour In',       desc:'Practise for a total of 1 hour',  test:() => DB.stats.totalSeconds >= 3600 }
-];
-
-function checkAchievements() {
-  const newly = [];
-  ACHIEVEMENTS.forEach(a => {
-    if (!DB.achievements[a.id] && a.test()) {
-      DB.achievements[a.id] = Date.now();
-      newly.push(a);
-    }
-  });
-  if (newly.length) {
-    saveDB();
-    newly.forEach((a, i) => setTimeout(() =>
-      toast(`<i class="fa-solid ${a.icon} text-warn me-2"></i>Badge unlocked: <b>${a.name}</b>`), i * 550));
-  }
-}
-
-/* ================================================================
-   10. VIEW RENDERING
-   ================================================================ */
-let wpmChart = null, accChart = null, modeChart = null;
-
-function renderDashboard() {
-  $('#dashBestWpm').textContent = DB.stats.bestWpm;
-  $('#dashBestAcc').textContent = DB.stats.bestAcc + '%';
-  $('#dashTime').textContent = Math.round(DB.stats.totalSeconds / 60) + 'm';
-  $('#dashStreak').textContent = streakDays();
-  $('#navStreak').textContent = streakDays();
-  $('#dashTests').textContent = DB.stats.tests + ' tests';
-
-  /* ---- 30-day calendar ---- */
-  const cal = $('#dashCalendar');
-  cal.innerHTML = '';
-  const set = new Set(DB.days);
-  const today = dateKey();
-  let active = 0;
-  for (let i = 29; i >= 0; i--) {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    const k = dateKey(d);
-    const cell = document.createElement('div');
-    cell.className = 'cal-cell' + (set.has(k) ? ' on' : '') + (k === today ? ' today' : '');
-    cell.title = k;
-    cal.appendChild(cell);
-    if (set.has(k)) active++;
-  }
-  $('#dashMonthDays').textContent = `${active} / 30`;
-
-  /* ---- recent tests ---- */
-  const tbody = $('#dashRecent');
-  const recent = DB.history.slice(-6).reverse();
-  if (!recent.length) {
-    tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-4">${t('no_tests')}</td></tr>`;
-  } else {
-    tbody.innerHTML = recent.map(r => `
-      <tr>
-        <td class="small">${new Date(r.t).toLocaleDateString()}</td>
-        <td class="small text-muted">${r.mode}</td>
-        <td><b class="text-accent">${r.wpm}</b></td>
-        <td><b class="text-ok">${r.acc}%</b></td>
-        <td class="small text-muted">${r.secs}s</td>
-      </tr>`).join('');
-  }
-}
-
-/* ---------------- LESSONS ---------------- */
-const LESSONS = [
-  { id:'m1-1', module:1, title:'স্বরবর্ণ (Vowels)',        text:'অ আ ই ঈ উ ঊ ঋ এ ঐ ও ঔ অ আ ই ঈ উ ঊ' },
-  { id:'m1-2', module:1, title:'ব্যঞ্জনবর্ণ ১ (Consonants)', text:'ক খ গ ঘ ঙ চ ছ জ ঝ ঞ ক খ গ ঘ ঙ' },
-  { id:'m1-3', module:1, title:'ব্যঞ্জনবর্ণ ২',             text:'ট ঠ ড ঢ ণ ত থ দ ধ ন প ফ ব ভ ম' },
-  { id:'m1-4', module:1, title:'সহজ শব্দ (Easy words)',     text:'কল বল জল চল ভাল মাল ডাল তাল হাল পাল' },
-
-  { id:'m2-1', module:2, title:'উপরের সারি (Top row)',      text:'প ফ ব ভ ম য র ল শ ষ স হ ড় ঢ় য় ৎ' },
-  { id:'m2-2', module:2, title:'সর্বনাম (Pronouns)',        text:'আমি তুমি সে আমরা তোমরা তারা আপনি উনি ইনি' },
-  { id:'m2-3', module:2, title:'ছোট বাক্য (Short sentences)',text:'আমি বাংলা টাইপ শিখছি। তুমি কী করছ?' },
-
-  { id:'m3-1', module:3, title:'যুক্তাক্ষর ১',              text:'জ্ঞ ক্ষ ত্র ঙ্গ ষ্ট স্থ দ্ধ ন্ত ক্ত ক্ষ্ম হ্ম' },
-  { id:'m3-2', module:3, title:'যুক্তাক্ষর ২',              text:'বিজ্ঞান শিক্ষা ক্ষেত্র স্বাস্থ্য সুপ্ত বিশ্ব বিদ্যা' },
-  { id:'m3-3', module:3, title:'কঠিন যুক্তাক্ষর',           text:'প্রজ্ঞা যুক্তি শক্তিশালী প্রত্যয় ব্যক্তিত্ব ঐতিহ্য' },
-
-  { id:'m4-1', module:4, title:'দৈনন্দিন শব্দ',             text:'বাংলাদেশ আমার প্রিয় দেশ। এই দেশের মানুষ অত্যন্ত পরিশ্রমী।' },
-  { id:'m4-2', module:4, title:'বই ও জ্ঞান',                text:'বই পড়া মানুষের জ্ঞান বৃদ্ধি করে এবং মনকে প্রসন্ন রাখে।' },
-
-  { id:'m5-1', module:5, title:'গান (Song excerpt)',        text:'আমি বাংলায় গান গাই, আমি বাংলার গান গাই। আমি আমার আমিকে চিরদিন এই বাংলায় খুঁজে পাই।' },
-  { id:'m5-2', module:5, title:'প্রবন্ধ (Essay excerpt)',   text:'শিক্ষা জাতির মেরুদণ্ড। একটি শিক্ষিত জাতি কেবল নিজের উন্নয়নই করে না, সমগ্র বিশ্বের উন্নয়নে গুরুত্বপূর্ণ ভূমিকা রাখে।' },
-  { id:'m5-3', module:5, title:'সংবাদ (News excerpt)',     text:'রাজধানী ঢাকায় আজ সকাল থেকে টানা বৃষ্টি হচ্ছে। এতে শহরের বিভিন্ন এলাকায় জলাবদ্ধতার সৃষ্টি হয়েছে।' }
-];
-
-const MODULE_NAMES = {
-  1:'মডিউল ১ — মৌলিক বর্ণ (Fundamentals)',
-  2:'মডিউল ২ — সারি অনুশীলন (Row Drills)',
-  3:'মডিউল ৩ — যুক্তাক্ষর (Conjuncts)',
-  4:'মডিউল ৪ — শব্দভাণ্ডার (Vocabulary)',
-  5:'মডিউল ৫ — গতি ও সহনশীলতা (Speed & Endurance)'
-};
-
-function renderLessons() {
-  const host = $('#lessonModules');
-  host.innerHTML = '';
-  for (let m = 1; m <= 5; m++) {
-    const items = LESSONS.filter(l => l.module === m);
-    if (!items.length) continue;
-
-    const wrap = document.createElement('div');
-    wrap.className = 'card-panel p-3 p-md-4 mb-3';
-    wrap.innerHTML = `<h6 class="fw-bold mb-3 bn"><i class="fa-solid fa-book-open text-accent me-2"></i>${MODULE_NAMES[m]}</h6>
-      <div class="row g-2"></div>`;
-    const row = wrap.querySelector('.row');
-
-    items.forEach(l => {
-      const col = document.createElement('div');
-      col.className = 'col-md-6 col-lg-4';
-      col.innerHTML = `
-        <div class="lesson-card" data-lesson="${l.id}">
-          <div class="mod">${t('module')} ${l.module}</div>
-          <h6 class="bn">${escapeHtml(l.title)}</h6>
-          <p class="bn">${escapeHtml(l.text)}</p>
-        </div>`;
-      row.appendChild(col);
-    });
-    host.appendChild(wrap);
-  }
-
-  // Delegated click → start lesson
-  host.addEventListener('click', (e) => {
-    const card = e.target.closest('[data-lesson]');
-    if (!card) return;
-    const lesson = LESSONS.find(l => l.id === card.dataset.lesson);
-    if (!lesson) return;
-    goto('practice');
-    Engine.start({ text: lesson.text, mode: 'lesson', duration: 0 });
-    $('#selMode').value = '0';
-    toast(`<i class="fa-solid fa-play me-1"></i>${lesson.title}`);
-  });
-}
-
-/* ---------------- ANALYTICS ---------------- */
-function renderAnalytics() {
-  if (typeof Chart === 'undefined') return;
-
-  const cs = getComputedStyle(document.documentElement);
-  const accent = cs.getPropertyValue('--accent').trim() || '#7c6cf0';
-  const accent2 = cs.getPropertyValue('--accent-2').trim() || '#22d3ee';
-  const muted = cs.getPropertyValue('--muted').trim() || '#98a1bd';
-  const border = cs.getPropertyValue('--border').trim() || '#2a3054';
-
-  const hist = DB.history.slice(-30);
-  const labels = hist.map((h, i) => `#${DB.history.length - hist.length + i + 1}`);
-
-  const baseOpts = {
-    responsive: true,
-    plugins: { legend: { display: false } },
-    scales: {
-      x: { ticks: { color: muted, maxTicksLimit: 10 }, grid: { color: border } },
-      y: { ticks: { color: muted }, grid: { color: border }, beginAtZero: true }
-    }
-  };
-
-  /* WPM line */
-  const wpmData = hist.map(h => h.wpm);
-  if (!wpmChart) {
-    wpmChart = new Chart($('#chartWpm'), {
-      type: 'line',
-      data: {
-        labels,
-        datasets: [{
-          data: wpmData, borderColor: accent, backgroundColor: 'rgba(124,108,240,.18)',
-          fill: true, tension: .35, pointRadius: 3, pointBackgroundColor: accent2, borderWidth: 2
-        }]
-      },
-      options: baseOpts
-    });
-  } else {
-    wpmChart.data.labels = labels;
-    wpmChart.data.datasets[0].data = wpmData;
-    wpmChart.update();
-  }
-
-  /* Accuracy line */
-  const accData = hist.map(h => h.acc);
-  if (!accChart) {
-    accChart = new Chart($('#chartAcc'), {
-      type: 'line',
-      data: {
-        labels,
-        datasets: [{
-          data: accData, borderColor: '#22c55e', backgroundColor: 'rgba(34,197,94,.15)',
-          fill: true, tension: .35, pointRadius: 2, borderWidth: 2
-        }]
-      },
-      options: baseOpts
-    });
-  } else {
-    accChart.data.labels = labels;
-    accChart.data.datasets[0].data = accData;
-    accChart.update();
-  }
-
-  /* Mode distribution doughnut */
-  const modeCounts = {};
-  DB.history.forEach(h => { modeCounts[h.mode] = (modeCounts[h.mode] || 0) + 1; });
-  const modeLabels = Object.keys(modeCounts);
-  const modeValues = Object.values(modeCounts);
-
-  if (!modeChart) {
-    modeChart = new Chart($('#chartMode'), {
-      type: 'doughnut',
-      data: {
-        labels: modeLabels.length ? modeLabels : ['No data'],
-        datasets: [{
-          data: modeValues.length ? modeValues : [1],
-          backgroundColor: ['#7c6cf0', '#22d3ee', '#f59e0b', '#22c55e', '#ef4444'],
-          borderWidth: 0
-        }]
-      },
-      options: { responsive: true, plugins: { legend: { labels: { color: muted } } } }
-    });
-  } else {
-    modeChart.data.labels = modeLabels.length ? modeLabels : ['No data'];
-    modeChart.data.datasets[0].data = modeValues.length ? modeValues : [1];
-    modeChart.update();
-  }
-
-  /* Error breakdown chips */
-  const entries = Object.entries(DB.keyErrors).sort((a, b) => b[1] - a[1]).slice(0, 18);
-  const host = $('#errorBreakdown');
-  host.innerHTML = entries.length
-    ? entries.map(([ch, n]) =>
-        `<span class="badge bn" style="background:var(--panel-3);color:var(--text);font-size:1rem;padding:.5rem .7rem">
-           ${escapeHtml(ch)} <span class="text-bad ms-1">×${n}</span>
-         </span>`).join('')
-    : '<span class="text-muted small">No errors recorded yet — great job!</span>';
-}
-
-/* ---------------- WEAK KEYS ---------------- */
-function renderWeakKeys() {
-  const entries = Object.entries(DB.keyErrors).sort((a, b) => b[1] - a[1]).slice(0, 14);
-  $('#weakKeysList').innerHTML = entries.length
-    ? entries.map(([ch, n]) =>
-        `<span class="badge bn" style="background:rgba(239,68,68,${clamp(n / 10, .15, .8)});color:#fff;font-size:1.05rem;padding:.55rem .8rem">
-           ${escapeHtml(ch)} ×${n}
-         </span>`).join('')
-    : '<span class="text-muted small">No data yet — complete a test to build your heat map.</span>';
-}
-
-/* ---------------- ACHIEVEMENTS ---------------- */
-function renderAchievements() {
-  const grid = $('#achievementGrid');
-  grid.innerHTML = ACHIEVEMENTS.map(a => {
-    const unlocked = !!DB.achievements[a.id];
-    return `
-      <div class="col-6 col-md-4 col-lg-3">
-        <div class="badge-card ${unlocked ? 'unlocked' : 'locked'}">
-          <div class="badge-icon"><i class="fa-solid ${a.icon}"></i></div>
-          <h6>${a.name}</h6>
-          <small>${a.desc}</small>
-          <div class="mt-2 small fw-bold ${unlocked ? 'text-ok' : 'text-muted'}">
-            ${unlocked ? '<i class="fa-solid fa-check"></i> Unlocked' : '<i class="fa-solid fa-lock"></i> Locked'}
-          </div>
-        </div>
-      </div>`;
-  }).join('');
-}
-
-/* ---------------- MASTER RENDER ---------------- */
-function renderAll() {
-  renderDashboard();
-  renderAnalytics();
-  renderWeakKeys();
-  renderAchievements();
-  renderSettingsUI();
-  updateKeyboardLabels();
-}
-
-/* ================================================================
-   11. SETTINGS / PROFILE / THEME
-   ================================================================ */
-const AVATARS = ['🐯','🦉','🐼','🦊','🐸','🐙','🦁','🐨','🚀','⭐','🎯','🔥'];
-
-function renderSettingsUI() {
-  $('#setName').value = DB.profile.name || '';
-  $('#dashName').value = DB.profile.name || '';
-  $('#setLang').value = DB.settings.lang;
-  $('#setSound').checked = DB.settings.sound;
-  $('#setShowKb').checked = DB.settings.showKeyboard;
-  $('#setFinger').checked = DB.settings.showFinger;
-  $('#setFont').value = DB.settings.fontScale;
-  $('#rngFont').value = DB.settings.fontScale;
-  $('#setLayout').value = DB.settings.layout;
-  $('#dashLayout').value = DB.settings.layout;
-  $('#selLayout').value = DB.settings.layout;
-  $('#selLayoutGuide').value = DB.settings.layout;
-
-  /* avatar picker */
-  const picker = $('#avatarPicker');
-  picker.innerHTML = AVATARS.map(a =>
-    `<button class="btn btn-outline ${a === DB.profile.avatar ? 'border-2 border-primary' : ''}"
-             style="font-size:1.3rem;width:48px;height:48px" data-avatar="${a}">${a}</button>`
-  ).join('');
-
-  /* sound button label */
-  $('#btnSound').innerHTML = DB.settings.sound
-    ? '<i class="fa-solid fa-volume-high me-1"></i>' + t('sound')
-    : '<i class="fa-solid fa-volume-xmark me-1"></i>' + t('sound');
-
-  applyTheme();
-  document.documentElement.style.setProperty('--type-scale', DB.settings.fontScale);
-}
-
-function applyTheme() {
-  document.documentElement.dataset.theme = DB.settings.theme;
-  $('#btnTheme').innerHTML = DB.settings.theme === 'dark'
-    ? '<i class="fa-solid fa-moon"></i>'
-    : '<i class="fa-solid fa-sun"></i>';
-}
-
-/* Populate layout <select> elements */
-function populateLayoutSelects() {
-  const html = Object.values(LAYOUTS).map(l =>
-    `<option value="${l.id}">${l.label[DB.settings.lang] || l.label.en}</option>`
-  ).join('');
-  ['#selLayout', '#setLayout', '#dashLayout', '#selLayoutGuide'].forEach(sel => {
-    const el = $(sel);
-    if (el) el.innerHTML = html;
-  });
-  $('#selLayout').value = DB.settings.layout;
-  $('#setLayout').value = DB.settings.layout;
-  $('#dashLayout').value = DB.settings.layout;
-  $('#selLayoutGuide').value = DB.settings.layout;
-}
-
-/* ================================================================
-   12. NAVIGATION
-   ================================================================ */
-function goto(viewId) {
-  $$('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + viewId));
-  $$('#navPills .pill').forEach(p => p.classList.toggle('active', p.dataset.goto === viewId));
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-
-  if (viewId === 'analytics') renderAnalytics();
-  if (viewId === 'achievements') renderAchievements();
-  if (viewId === 'keyboard') updateKeyboardLabels();
-  if (viewId === 'dashboard') renderDashboard();
-  if (viewId === 'practice') setTimeout(() => Engine.focusInput(), 120);
-}
-
-/* ================================================================
-   13. EVENT WIRING
-   ================================================================ */
-function wireEvents() {
-
-  /* ---- navigation ---- */
-  document.addEventListener('click', (e) => {
-    const nav = e.target.closest('[data-goto]');
-    if (nav) { e.preventDefault(); goto(nav.dataset.goto); }
-  });
-
-  /* ---- theme toggle ---- */
-  $('#btnTheme').addEventListener('click', () => {
-    DB.settings.theme = DB.settings.theme === 'dark' ? 'light' : 'dark';
-    saveDB(); applyTheme();
-  });
-
-  /* ---- language toggle ---- */
-  $('#btnLang').addEventListener('click', () => {
-    DB.settings.lang = DB.settings.lang === 'en' ? 'bn' : 'en';
-    saveDB();
-    applyI18n();
-    populateLayoutSelects();
-    renderAll();
-  });
-
-  /* ---- practice: typing surface ---- */
-  const typeWrap = $('#typeWrap');
-  typeWrap.addEventListener('click', () => Engine.focusInput());
-  document.addEventListener('keydown', (e) => {
-    // Only capture typing when the practice view is active and the
-    // textarea (or the typing surface) is focused.
-    if (!$('#view-practice').classList.contains('active')) return;
-    const active = document.activeElement;
-    if (active !== $('#nativeInput') && !typeWrap.contains(active)) return;
-    if (e.key === 'Escape') { document.body.classList.remove('zen-mode'); return; }
-    Engine.handleKeyDown(e);
-  });
-
-  /* ---- native input focus handling ---- */
-  $('#nativeInput').addEventListener('blur', () => {
-    // keep focus inside the typing area while a test is running
-    if (Engine.running && !Engine.finished) {
-      setTimeout(() => { if (Engine.running) Engine.focusInput(); }, 10);
-    }
-  });
-
-  /* ---- toolbar ---- */
-  $('#btnRestart').addEventListener('click', () => Engine.start());
-  $('#resRetry').addEventListener('click', () => {
-    bootstrap.Modal.getInstance($('#resultModal'))?.hide();
-    Engine.start();
-  });
-
-  $('#selMode').addEventListener('change', () => Engine.start());
-
-  $('#selLayout').addEventListener('change', (e) => {
-    DB.settings.layout = e.target.value;
-    saveDB();
-    populateLayoutSelects();
-    updateKeyboardLabels();
-    Engine.start();
-  });
-
-  $('#btnFocus').addEventListener('click', () => {
-    document.body.classList.toggle('zen-mode');
-    typeWrap.classList.toggle('zen');
-    Engine.focusInput();
-  });
-
-  $('#btnSound').addEventListener('click', () => {
-    DB.settings.sound = !DB.settings.sound;
-    saveDB();
-    renderSettingsUI();
-    if (DB.settings.sound) playClick();
-  });
-
-  $('#rngFont').addEventListener('input', (e) => {
-    DB.settings.fontScale = parseFloat(e.target.value);
-    document.documentElement.style.setProperty('--type-scale', DB.settings.fontScale);
-    saveDB();
-  });
-
-  /* ---- race toggles ---- */
-  $('#chkRace').addEventListener('change', (e) => {
-    $('#selBot').classList.toggle('d-none', !e.target.checked);
-    Engine.start({ race: e.target.checked });
-  });
-  $('#selBot').addEventListener('change', () => Engine.start({ race: true }));
-
-  /* ---- dashboard quick-start ---- */
-  $$('.quick-start').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const dur = parseInt(btn.dataset.dur, 10);
-      $('#selMode').value = String(dur);
-      goto('practice');
-      Engine.start({ duration: dur });
-    });
-  });
-
-  $('#dashLayout').addEventListener('change', (e) => {
-    DB.settings.layout = e.target.value;
-    saveDB();
-    populateLayoutSelects();
-    updateKeyboardLabels();
-  });
-
-  $('#dashName').addEventListener('input', (e) => {
-    DB.profile.name = e.target.value;
-    saveDB();
-    $('#setName').value = e.target.value;
-  });
-
-  /* ---- lessons: keyboard layout guide ---- */
-  $('#selLayoutGuide').addEventListener('change', (e) => {
-    buildKeyboard($('#kbGuide'), { layoutId: e.target.value, finger: DB.settings.showFinger });
-  });
-
-  /* ---- custom lesson modal ---- */
-  $('#btnStartCustom').addEventListener('click', () => {
-    const txt = $('#customText').value.trim();
-    if (txt.length < 5) { toast('Please enter at least a few characters.'); return; }
-    bootstrap.Modal.getInstance($('#customModal'))?.hide();
-    goto('practice');
-    $('#selMode').value = '0';
-    Engine.start({ text: txt, mode: 'lesson', duration: 0 });
-  });
-
-  /* ---- settings ---- */
-  $('#setName').addEventListener('input', (e) => {
-    DB.profile.name = e.target.value;
-    saveDB();
-    $('#dashName').value = e.target.value;
-  });
-
-  $('#avatarPicker').addEventListener('click', (e) => {
-    const btn = e.target.closest('[data-avatar]');
-    if (!btn) return;
-    DB.profile.avatar = btn.dataset.avatar;
-    saveDB();
-    renderSettingsUI();
-  });
-
-  $('#setLayout').addEventListener('change', (e) => {
-    DB.settings.layout = e.target.value;
-    saveDB(); populateLayoutSelects(); updateKeyboardLabels(); Engine.start();
-  });
-
-  $('#setLang').addEventListener('change', (e) => {
-    DB.settings.lang = e.target.value;
-    saveDB(); applyI18n(); populateLayoutSelects(); renderAll();
-  });
-
-  $('#setSound').addEventListener('change', (e) => {
-    DB.settings.sound = e.target.checked; saveDB(); renderSettingsUI();
-  });
-  $('#setShowKb').addEventListener('change', (e) => {
-    DB.settings.showKeyboard = e.target.checked; saveDB(); updateKeyboardLabels();
-  });
-  $('#setFinger').addEventListener('change', (e) => {
-    DB.settings.showFinger = e.target.checked; saveDB(); updateKeyboardLabels();
-  });
-  $('#setFont').addEventListener('input', (e) => {
-    DB.settings.fontScale = parseFloat(e.target.value);
-    document.documentElement.style.setProperty('--type-scale', DB.settings.fontScale);
-    $('#rngFont').value = e.target.value;
-    saveDB();
-  });
-
-  /* ---- export / import / reset ---- */
-  $('#btnExport').addEventListener('click', () => {
-    const blob = new Blob([JSON.stringify(DB, null, 2)], { type: 'application/json' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `banglatypingpro-progress-${dateKey()}.json`;
-    a.click();
-    URL.revokeObjectURL(a.href);
-    toast('<i class="fa-solid fa-download me-1"></i>Progress exported.');
-  });
-
-  $('#btnImport').addEventListener('click', () => $('#fileImport').click());
-  $('#fileImport').addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      try {
-        const data = JSON.parse(reader.result);
-        DB = {
-          profile:   { ...DEFAULTS.profile,   ...(data.profile || {}) },
-          settings:  { ...DEFAULTS.settings,  ...(data.settings || {}) },
-          stats:     { ...DEFAULTS.stats,     ...(data.stats || {}) },
-          history:   Array.isArray(data.history) ? data.history : [],
-          keyErrors: data.keyErrors || {},
-          days:      Array.isArray(data.days) ? data.days : [],
-          achievements: data.achievements || {}
-        };
-        saveDB();
-        applyI18n(); populateLayoutSelects(); renderAll(); applyTheme();
-        toast('<i class="fa-solid fa-check me-1"></i>Progress imported.');
-      } catch (err) {
-        toast('<i class="fa-solid fa-triangle-exclamation me-1"></i>Invalid file.');
-      }
-    };
-    reader.readAsText(file);
-    e.target.value = '';
-  });
-
-  $('#btnReset').addEventListener('click', () => {
-    if (!confirm('Delete all progress, stats and settings? This cannot be undone.')) return;
-    localStorage.removeItem(STORE_KEY);
-    DB = structuredClone(DEFAULTS);
-    saveDB();
-    applyI18n(); populateLayoutSelects(); renderAll(); applyTheme();
-    Engine.start();
-    toast('<i class="fa-solid fa-trash me-1"></i>All data reset.');
-  });
-
-  /* ---- certificate ---- */
-  $('#certModal').addEventListener('show.bs.modal', () => {
-    $('#certName').textContent = DB.profile.name || 'Bengali Typing Learner';
-    $('#certWpm').textContent = DB.stats.bestWpm;
-    $('#certAcc').textContent = DB.stats.bestAcc + '%';
-    $('#certTests').textContent = DB.stats.tests;
-    $('#certDate').textContent = new Date().toLocaleDateString(undefined,
-      { year: 'numeric', month: 'long', day: 'numeric' });
-  });
-  $('#btnPrintCert').addEventListener('click', () => window.print());
-
-  /* ---- global keyboard shortcuts ---- */
-  document.addEventListener('keydown', (e) => {
-    if (e.ctrlKey && e.key === 'Enter') {           // Ctrl+Enter → restart
-      e.preventDefault();
-      goto('practice');
-      Engine.start();
-    }
-    if (e.ctrlKey && (e.key === 'k' || e.key === 'K')) { // Ctrl+K → toggle keyboard
-      e.preventDefault();
-      DB.settings.showKeyboard = !DB.settings.showKeyboard;
-      saveDB(); updateKeyboardLabels(); renderSettingsUI();
-    }
-    if (e.key === 'Escape') {
-      document.body.classList.remove('zen-mode');
-      typeWrap.classList.remove('zen');
-    }
-  });
-
-  /* ---- physical key highlight (visual feedback everywhere) ---- */
-  document.addEventListener('keydown', (e) => {
-    if ($('#view-practice').classList.contains('active')) highlightKey(e.code);
-  });
-}
-
-/* ================================================================
-   14. BOOT
-   ================================================================ */
-function boot() {
-  applyI18n();
-  populateLayoutSelects();
-  renderAll();
-  wireEvents();
-  applyTheme();
-
-  // First practice text
-  Engine.start({ text: PRACTICE_TEXTS[0], duration: 60 });
-  $('#selMode').value = '60';
-
-  // Friendly first-run hint
-  if (!DB.profile.joined) {
-    DB.profile.joined = Date.now();
-    saveDB();
-    setTimeout(() => toast('<i class="fa-solid fa-hand-sparkles me-1"></i>Welcome to BanglaTypingPro Ultra! Click the text area and start typing.'), 800);
-  }
-}
-
-document.addEventListener('DOMContentLoaded', boot);
-</script>
+<!-- ═══════════════════════════════════════════ -->
+<!-- FOOTER                                       -->
+<!-- ═══════════════════════════════════════════ -->
+<footer class="text-center py-3 small opacity-75">
+  © 2025 বাংলা টাইপিং একাডেমি — <strong class="glow-text">MOTTALAB MIA</strong> • বিজয় ইউনিকোড প্রো
+</footer>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- SCRIPTS                                      -->
+<!-- ═══════════════════════════════════════════ -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="js/data.js"></script>
+<script src="js/keyboard.js"></script>
+<script src="js/animations.js"></script>
+<script src="js/app.js"></script>
 </body>
 </html>
