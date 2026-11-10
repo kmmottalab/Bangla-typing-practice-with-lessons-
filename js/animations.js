@@ -1,17 +1,17 @@
 /* ═══════════════════════════════════════════════════════════════
-   বাংলা টাইপিং একাডেমি — ANIMATIONS.JS
-   পার্টিকেল + কনফেটি + সাউন্ড + এনিমেশন (পারমাণবিক)
+   বাংলা টাইপিং একাডেমি — ANIMATIONS.JS (ATOMIC ULTIMATE)
+   পার্টিকেল + কনফেটি + সাউন্ড + এনিমেশন
    ═══════════════════════════════════════════════════════════════ */
 
 /* ═══════════════════════════════════════════════════════
    1. SOUND ENGINE — Web Audio API
    ═══════════════════════════════════════════════════════ */
-
 class SoundEngine {
   constructor() {
     this.enabled = true;
     this.ctx = null;
     this.masterGain = null;
+    this.volume = 0.15;
     this.initContext();
   }
 
@@ -21,7 +21,7 @@ class SoundEngine {
       if (!AudioCtx) return;
       this.ctx = new AudioCtx();
       this.masterGain = this.ctx.createGain();
-      this.masterGain.gain.value = 0.15;
+      this.masterGain.gain.value = this.volume;
       this.masterGain.connect(this.ctx.destination);
     } catch (e) {
       console.warn('Audio not available:', e);
@@ -35,6 +35,7 @@ class SoundEngine {
     }
   }
 
+  /* ═══════ Basic Tone ═══════ */
   tone(freq, duration = 0.08, type = 'sine', volume = 0.5) {
     if (!this.enabled) return;
     this.ensureContext();
@@ -59,6 +60,32 @@ class SoundEngine {
     } catch (e) {}
   }
 
+  /* ═══════ Advance Tone (frequency sweep) ═══════ */
+  sweep(freqStart, freqEnd, duration = 0.15, type = 'sine', volume = 0.4) {
+    if (!this.enabled) return;
+    this.ensureContext();
+    if (!this.ctx) return;
+
+    try {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      osc.type = type;
+      osc.frequency.setValueAtTime(freqStart, this.ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(freqEnd, this.ctx.currentTime + duration);
+
+      gain.gain.setValueAtTime(volume, this.ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+
+      osc.connect(gain);
+      gain.connect(this.masterGain);
+
+      osc.start();
+      osc.stop(this.ctx.currentTime + duration);
+    } catch (e) {}
+  }
+
+  /* ═══════ Predefined Sounds ═══════ */
   keyPress() { this.tone(1200, 0.04, 'sine', 0.3); }
   correct() { this.tone(880, 0.06, 'sine', 0.4); }
 
@@ -89,6 +116,40 @@ class SoundEngine {
   miss() { this.tone(150, 0.25, 'sawtooth', 0.4); }
   tick() { this.tone(1000, 0.05, 'sine', 0.2); }
   pop() { this.tone(600, 0.06, 'sine', 0.3); }
+
+  click() { this.tone(400, 0.03, 'sine', 0.2); }
+
+  /* ═══════ Advanced Sounds ═══════ */
+  combo(streak) {
+    const baseFreq = 400 + streak * 40;
+    this.tone(baseFreq, 0.05, 'sine', 0.3);
+  }
+
+  achievement() {
+    const notes = [784, 988, 1175, 1568];
+    notes.forEach((freq, i) => {
+      setTimeout(() => this.tone(freq, 0.15, 'triangle', 0.4), i * 100);
+    });
+  }
+
+  typingStart() {
+    this.sweep(300, 600, 0.2, 'sine', 0.3);
+  }
+
+  typingEnd() {
+    this.sweep(600, 300, 0.2, 'sine', 0.3);
+  }
+
+  /* ═══════ Controls ═══════ */
+  toggle() {
+    this.enabled = !this.enabled;
+    return this.enabled;
+  }
+
+  setVolume(v) {
+    this.volume = Math.max(0, Math.min(1, v));
+    if (this.masterGain) this.masterGain.gain.value = this.volume;
+  }
 }
 
 const sound = new SoundEngine();
@@ -97,13 +158,13 @@ const sound = new SoundEngine();
 /* ═══════════════════════════════════════════════════════
    2. PARTICLE SYSTEM — Canvas
    ═══════════════════════════════════════════════════════ */
-
 class ParticleSystem {
   constructor() {
     this.canvas = null;
     this.ctx = null;
     this.particles = [];
     this.rafId = null;
+    this.maxParticles = 500;
     this.init();
   }
 
@@ -132,9 +193,11 @@ class ParticleSystem {
     const dpr = window.devicePixelRatio || 1;
     this.canvas.width = window.innerWidth * dpr;
     this.canvas.height = window.innerHeight * dpr;
+    this.ctx.setTransform(1, 0, 0, 1, 0, 0);
     this.ctx.scale(dpr, dpr);
   }
 
+  /* ═══════ Burst — নির্দিষ্ট পয়েন্ট থেকে ═══════ */
   burst(x, y, options = {}) {
     const count = options.count || 12;
     const colors = options.colors || ['#6366f1', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981'];
@@ -143,6 +206,10 @@ class ParticleSystem {
     const life = options.life || 800;
     const gravity = options.gravity !== undefined ? options.gravity : 0.15;
     const shape = options.shape || 'circle';
+
+    if (this.particles.length > this.maxParticles) {
+      this.particles = this.particles.slice(-this.maxParticles);
+    }
 
     for (let i = 0; i < count; i++) {
       const angle = (Math.PI * 2 * i) / count + Math.random() * 0.5;
@@ -165,6 +232,7 @@ class ParticleSystem {
     }
   }
 
+  /* ═══════ Confetti — উপরে থেকে পড়া ═══════ */
   confetti(duration = 2000) {
     const endTime = Date.now() + duration;
     const colors = ['#6366f1', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#06b6d4', '#ef4444'];
@@ -191,6 +259,7 @@ class ParticleSystem {
     spawn();
   }
 
+  /* ═══════ Explosion — বড় বিস্ফোরণ ═══════ */
   explode(x, y) {
     this.burst(x, y, {
       count: 30,
@@ -201,6 +270,50 @@ class ParticleSystem {
     });
   }
 
+  /* ═══════ Star Burst — তারা বিস্ফোরণ ═══════ */
+  starBurst(x, y) {
+    this.burst(x, y, {
+      count: 20,
+      speed: 6,
+      size: 8,
+      life: 1000,
+      shape: 'star',
+      colors: ['#fbbf24', '#f59e0b', '#ef4444']
+    });
+  }
+
+  /* ═══════ Firework — আতশবাজি ═══════ */
+  firework(x, y) {
+    const color = ['#f59e0b', '#ec4899', '#8b5cf6', '#10b981', '#06b6d4'][Math.floor(Math.random() * 5)];
+    this.burst(x, y, {
+      count: 40,
+      speed: 10,
+      size: 5,
+      life: 1500,
+      gravity: 0.2,
+      colors: [color, '#ffffff']
+    });
+  }
+
+  /* ═══════ Trail — পিছু পিছু ═══════ */
+  trail(x, y, color = '#6366f1') {
+    this.particles.push({
+      x, y,
+      vx: (Math.random() - 0.5) * 2,
+      vy: (Math.random() - 0.5) * 2,
+      size: 3 + Math.random() * 3,
+      color,
+      life: 500,
+      maxLife: 500,
+      gravity: 0.05,
+      shape: 'circle',
+      rotation: 0,
+      rotationSpeed: 0,
+      opacity: 1
+    });
+  }
+
+  /* ═══════ Loop ═══════ */
   loop() {
     if (!this.ctx) return;
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
@@ -231,6 +344,13 @@ class ParticleSystem {
         this.ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
       } else if (p.shape === 'star') {
         this.drawStar(0, 0, 5, p.size, p.size / 2);
+      } else if (p.shape === 'triangle') {
+        this.ctx.beginPath();
+        this.ctx.moveTo(0, -p.size / 2);
+        this.ctx.lineTo(p.size / 2, p.size / 2);
+        this.ctx.lineTo(-p.size / 2, p.size / 2);
+        this.ctx.closePath();
+        this.ctx.fill();
       } else {
         this.ctx.beginPath();
         this.ctx.arc(0, 0, p.size / 2, 0, Math.PI * 2);
@@ -261,6 +381,10 @@ class ParticleSystem {
     this.ctx.lineTo(cx, cy - outerR);
     this.ctx.closePath();
     this.ctx.fill();
+  }
+
+  clear() {
+    this.particles = [];
   }
 }
 
@@ -345,6 +469,7 @@ function floatText(text, x, y, color = '#f59e0b', size = 24) {
     text-shadow: 0 0 12px ${color}, 0 2px 8px rgba(0,0,0,0.5);
     animation: floatUp 1.2s ease-out forwards;
     font-family: 'Hind Siliguri', sans-serif;
+    transform: translate(-50%, 0);
   `;
   document.body.appendChild(el);
   setTimeout(() => el.remove(), 1200);
@@ -369,8 +494,11 @@ function rippleEffect(element, event) {
     pointer-events: none;
     transform: scale(0);
     animation: ripple 0.6s ease-out;
+    z-index: 1;
   `;
-  element.style.position = 'relative';
+  if (getComputedStyle(element).position === 'static') {
+    element.style.position = 'relative';
+  }
   element.style.overflow = 'hidden';
   element.appendChild(ripple);
   setTimeout(() => ripple.remove(), 600);
@@ -390,6 +518,27 @@ function staggerIn(container, selector, delay = 50) {
   });
 }
 
+function slideIn(element, direction = 'left') {
+  if (!element) return;
+  const startX = direction === 'left' ? -50 : 50;
+  element.style.opacity = '0';
+  element.style.transform = `translateX(${startX}px)`;
+  setTimeout(() => {
+    element.style.transition = 'all 0.4s ease';
+    element.style.opacity = '1';
+    element.style.transform = 'translateX(0)';
+  }, 10);
+}
+
+function bounceIn(element) {
+  if (!element) return;
+  element.style.transform = 'scale(0)';
+  setTimeout(() => {
+    element.style.transition = 'transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)';
+    element.style.transform = 'scale(1)';
+  }, 10);
+}
+
 
 /* ═══════════════════════════════════════════════════════
    4. COMBO SYSTEM
@@ -397,7 +546,6 @@ function staggerIn(container, selector, delay = 50) {
 
 let comboCount = 0;
 let comboTimer = null;
-
 window._comboCount = 0;
 
 function triggerCorrectChar(element) {
@@ -406,7 +554,7 @@ function triggerCorrectChar(element) {
   clearTimeout(comboTimer);
 
   if (comboCount % 5 === 0) {
-    sound.hit();
+    sound.combo(comboCount);
   } else {
     sound.correct();
   }
@@ -422,10 +570,18 @@ function triggerCorrectChar(element) {
     });
   }
 
-  if (comboCount >= 25 && comboCount % 25 === 0 && element) {
-    const rect = element.getBoundingClientRect();
-    floatText(`COMBO x${comboCount}!`, rect.left + rect.width / 2, rect.top - 20, '#f59e0b', 22);
+  if (comboCount >= 25 && comboCount % 25 === 0) {
+    const centerX = window.innerWidth / 2;
+    const centerY = window.innerHeight / 2;
+    floatText(`COMBO x${comboCount}!`, centerX, centerY - 100, '#f59e0b', 32);
     if (comboCount >= 50) sound.levelUp();
+    particles.starBurst(centerX, centerY);
+  }
+
+  if (comboCount === 100) {
+    sound.achievement();
+    particles.confetti(3000);
+    floatText('🔥 CENTURY! 🔥', window.innerWidth / 2, window.innerHeight / 2, '#ef4444', 40);
   }
 
   updateComboMeter(comboCount);
@@ -501,6 +657,12 @@ function updateComboMeter(count) {
   }
 }
 
+/* ═══════ Combo update UI directly ═══════ */
+function updateComboUI(count) {
+  const el = document.getElementById('combo');
+  if (el) el.textContent = count;
+}
+
 
 /* ═══════════════════════════════════════════════════════
    5. CELEBRATIONS
@@ -520,10 +682,7 @@ function celebrateLessonComplete(wpm, accuracy) {
     colors: ['#f59e0b', '#ec4899', '#8b5cf6', '#10b981', '#06b6d4']
   });
 
-  setTimeout(() => {
-    particles.confetti(2500);
-  }, 200);
-
+  setTimeout(() => particles.confetti(2500), 200);
   flashScreen('#10b981', 250);
 
   setTimeout(() => {
@@ -601,6 +760,69 @@ function celebrateLevelUp(level) {
       setTimeout(() => el.remove(), 500);
     }, 1800);
   }, 400);
+}
+
+function celebrateAchievement(title, description) {
+  sound.achievement();
+
+  const el = document.createElement('div');
+  el.style.cssText = `
+    position: fixed;
+    left: 50%;
+    top: 20%;
+    transform: translate(-50%, -50%) scale(0);
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: #fff;
+    padding: 24px 40px;
+    border-radius: 20px;
+    font-size: 1.2rem;
+    font-weight: 700;
+    text-align: center;
+    z-index: 10000;
+    box-shadow: 0 20px 60px rgba(16, 185, 129, 0.7);
+    animation: completePop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    font-family: 'Hind Siliguri', sans-serif;
+    min-width: 280px;
+  `;
+  el.innerHTML = `
+    <div style="font-size: 2.5rem; margin-bottom: 8px;">🏆</div>
+    <div>${title}</div>
+    <div style="font-size: 0.9rem; opacity: 0.9; margin-top: 6px;">${description || ''}</div>
+  `;
+  document.body.appendChild(el);
+
+  particles.firework(window.innerWidth / 2, window.innerHeight / 2);
+
+  setTimeout(() => {
+    el.style.transition = 'opacity 0.5s';
+    el.style.opacity = '0';
+    setTimeout(() => el.remove(), 500);
+  }, 2500);
+}
+
+function showComboBreak() {
+  const el = document.createElement('div');
+  el.textContent = '💔 COMBO BREAK';
+  el.style.cssText = `
+    position: fixed;
+    left: 50%;
+    top: 30%;
+    transform: translate(-50%, -50%) scale(0);
+    color: #ef4444;
+    font-size: 1.5rem;
+    font-weight: 800;
+    z-index: 10000;
+    text-shadow: 0 0 20px rgba(239, 68, 68, 0.8), 0 4px 12px rgba(0,0,0,0.5);
+    animation: completePop 0.5s ease forwards;
+    font-family: 'Hind Siliguri', sans-serif;
+    pointer-events: none;
+  `;
+  document.body.appendChild(el);
+  setTimeout(() => {
+    el.style.transition = 'opacity 0.4s';
+    el.style.opacity = '0';
+    setTimeout(() => el.remove(), 400);
+  }, 800);
 }
 
 
@@ -687,18 +909,23 @@ window.animations = {
   floatText,
   rippleEffect,
   staggerIn,
+  slideIn,
+  bounceIn,
   triggerCorrectChar,
   triggerWrongChar,
   resetCombo,
   updateComboMeter,
+  updateComboUI,
   celebrateLessonComplete,
   celebrateLevelUp,
+  celebrateAchievement,
+  showComboBreak,
   updateStreakFlame
 };
 
 
 /* ═══════════════════════════════════════════════════════
-   9. BUTTON RIPPLE
+   9. BUTTON RIPPLE — সব বাটনে
    ═══════════════════════════════════════════════════════ */
 
 document.addEventListener('click', (e) => {
@@ -713,13 +940,8 @@ document.addEventListener('click', (e) => {
    10. AUDIO CONTEXT UNLOCK
    ═══════════════════════════════════════════════════════ */
 
-document.addEventListener('click', () => {
-  sound.ensureContext();
-}, { once: true });
-
-document.addEventListener('keydown', () => {
-  sound.ensureContext();
-}, { once: true });
+document.addEventListener('click', () => sound.ensureContext(), { once: true });
+document.addEventListener('keydown', () => sound.ensureContext(), { once: true });
 
 
 /* ═══════════════════════════════════════════════════════
@@ -729,9 +951,7 @@ document.addEventListener('keydown', () => {
 document.addEventListener('keydown', (e) => {
   const target = e.target;
   if (['typeInput', 'gameInput', 'kbTestInput', 'examInput'].includes(target.id)) {
-    if (e.key.length === 1) {
-      sound.keyPress();
-    } else if (e.key === 'Backspace' || e.key === 'Enter') {
+    if (e.key.length === 1 || e.key === 'Backspace' || e.key === 'Enter') {
       sound.keyPress();
     }
   }
@@ -739,8 +959,25 @@ document.addEventListener('keydown', (e) => {
 
 
 /* ═══════════════════════════════════════════════════════
-   12. CONSOLE
+   12. KEYBOARD SHORTCUTS
    ═══════════════════════════════════════════════════════ */
 
-console.log('%c🎬 Animations loaded', 'color:#ec4899;font-size:15px;font-weight:bold;');
+document.addEventListener('keydown', (e) => {
+  /* Ctrl+Enter → পরবর্তী লেসন */
+  if (e.ctrlKey && e.key === 'Enter') {
+    e.preventDefault();
+    if (window.app && typeof app.nextLesson === 'function') app.nextLesson();
+  }
+  /* Escape → ফোকাস মোড off */
+  if (e.key === 'Escape') {
+    document.body.classList.remove('focus-mode');
+  }
+});
+
+
+/* ═══════════════════════════════════════════════════════
+   13. CONSOLE
+   ═══════════════════════════════════════════════════════ */
+
+console.log('%c🎬 Animations.js loaded (ATOMIC)', 'color:#ec4899;font-size:15px;font-weight:bold;');
 console.log('%c✨ animations.sound, animations.particles, animations.celebrateLessonComplete', 'color:#8b5cf6;font-size:11px;');
