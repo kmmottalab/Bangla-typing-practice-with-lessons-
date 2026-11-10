@@ -1,17 +1,27 @@
 <!DOCTYPE html>
-<html lang="bn" data-theme="dark">
+<html lang="bn" data-theme="dark" data-lang="bn">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>বাংলা টাইপিং একাডেমি — পারমাণবিক প্রো</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<meta name="description" content="বাংলা টাইপিং একাডেমি — পারমাণবিক সংস্করণ। ৬টি কীবোর্ড, ৩০০+ লেসন, Grapheme-aware ইঞ্জিন।">
+<meta name="theme-color" content="#0a0e27">
+<title>বাংলা টাইপিং একাডেমি — ATOMIC ULTIMATE</title>
+
+<!-- Bootstrap 5.3 -->
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<!-- Bootstrap Icons -->
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700;800&family=Noto+Sans+Bengali:wght@400;600;700;900&display=swap" rel="stylesheet">
+<!-- AOS Animation -->
+<link href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" rel="stylesheet">
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700;800&family=Noto+Sans+Bengali:wght@400;600;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+<!-- Custom CSS -->
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
-<!-- WATERMARK -->
+<!-- ═══════════════ WATERMARK ═══════════════ -->
 <div class="watermark-layer" aria-hidden="true">
   <span class="wm wm-a">MOTTALAB MIA</span>
   <span class="wm wm-b">MOTTALAB MIA</span>
@@ -25,55 +35,70 @@
   <span class="wm wm-j">MOTTALAB MIA</span>
 </div>
 
-<!-- BG -->
+<!-- ═══════════════ BG ANIMATION ═══════════════ -->
 <div class="bg-anim" aria-hidden="true">
   <div class="orb orb-1"></div>
   <div class="orb orb-2"></div>
   <div class="orb orb-3"></div>
   <div class="orb orb-4"></div>
+  <div class="orb orb-5"></div>
   <div class="stars"></div>
+  <div class="grid-overlay"></div>
 </div>
 
-<!-- NAVBAR -->
+<!-- ═══════════════ NAVBAR ═══════════════ -->
 <nav class="navbar glass-nav sticky-top">
   <div class="container-fluid px-3 px-lg-4">
-    <a class="navbar-brand" href="#">
-      <span class="brand-icon">⌨</span>
+    <a class="navbar-brand" href="#" onclick="app.showPage('dashboard');return false;">
+      <span class="brand-icon">⚛️</span>
       <span class="brand-text">বাংলা টাইপিং</span>
-      <span class="badge-ultra">ATOMIC PRO</span>
+      <span class="badge-ultra">ATOMIC</span>
     </a>
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
       <span class="navbar-toggler-icon"></span>
     </button>
     <div class="collapse navbar-collapse" id="navMenu">
       <ul class="navbar-nav ms-auto gap-1">
-        <li class="nav-item"><button class="nav-btn active" data-tab="dashboard"><i class="bi bi-speedometer2"></i> ড্যাশবোর্ড</button></li>
-        <li class="nav-item"><button class="nav-btn" data-tab="lessons"><i class="bi bi-journal-bookmark"></i> লেসন</button></li>
-        <li class="nav-item"><button class="nav-btn" data-tab="typing"><i class="bi bi-pencil-square"></i> টাইপিং</button></li>
-        <li class="nav-item"><button class="nav-btn" data-tab="exam"><i class="bi bi-trophy"></i> পরীক্ষা</button></li>
-        <li class="nav-item"><button class="nav-btn" data-tab="keyboard"><i class="bi bi-keyboard"></i> কীবোর্ড</button></li>
-        <li class="nav-item"><button class="nav-btn" data-tab="game"><i class="bi bi-controller"></i> গেম</button></li>
-        <li class="nav-item"><button class="nav-btn" data-tab="stats"><i class="bi bi-bar-chart-line"></i> পরিসংখ্যান</button></li>
-        <li class="nav-item"><button class="nav-btn" id="themeBtn"><i class="bi bi-moon-stars"></i></button></li>
+        <li class="nav-item"><button class="nav-btn active" data-tab="dashboard"><i class="bi bi-grid-1x2"></i> <span data-i18n="dashboard">ড্যাশবোর্ড</span></button></li>
+        <li class="nav-item"><button class="nav-btn" data-tab="lessons"><i class="bi bi-journal-text"></i> <span data-i18n="lessons">লেসন</span></button></li>
+        <li class="nav-item"><button class="nav-btn" data-tab="typing"><i class="bi bi-pencil-square"></i> <span data-i18n="typing">টাইপিং</span></button></li>
+        <li class="nav-item"><button class="nav-btn" data-tab="exam"><i class="bi bi-trophy"></i> <span data-i18n="exam">পরীক্ষা</span></button></li>
+        <li class="nav-item"><button class="nav-btn" data-tab="keyboard"><i class="bi bi-keyboard"></i> <span data-i18n="keyboard">কীবোর্ড</span></button></li>
+        <li class="nav-item"><button class="nav-btn" data-tab="game"><i class="bi bi-controller"></i> <span data-i18n="game">গেম</span></button></li>
+        <li class="nav-item"><button class="nav-btn" data-tab="stats"><i class="bi bi-graph-up"></i> <span data-i18n="stats">পরিসংখ্যান</span></button></li>
+        <li class="nav-item dropdown">
+          <button class="nav-btn dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-gear"></i></button>
+          <ul class="dropdown-menu dropdown-menu-end glass-menu">
+            <li><a class="dropdown-item" href="#" onclick="app.toggleTheme();return false;"><i class="bi bi-moon-stars"></i> থিম</a></li>
+            <li><a class="dropdown-item" href="#" onclick="app.toggleLang();return false;"><i class="bi bi-translate"></i> ভাষা</a></li>
+            <li><a class="dropdown-item" href="#" onclick="app.toggleSound();return false;"><i class="bi bi-volume-up"></i> সাউন্ড</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="#" onclick="app.exportProgress();return false;"><i class="bi bi-download"></i> এক্সপোর্ট</a></li>
+            <li><a class="dropdown-item text-danger" href="#" onclick="app.resetProgress();return false;"><i class="bi bi-trash"></i> রিসেট</a></li>
+          </ul>
+        </li>
       </ul>
     </div>
   </div>
 </nav>
 
-<!-- MAIN -->
-<main class="container-fluid px-3 px-lg-4 my-4">
+<!-- ═══════════════ MAIN ═══════════════ -->
+<main class="container-fluid px-3 px-lg-4 my-4 position-relative z-2">
 
-  <!-- DASHBOARD -->
+  <!-- ═══════ DASHBOARD ═══════ -->
   <section class="page active" id="page-dashboard">
-    <div class="glass hero p-4 p-lg-5 mb-4 position-relative overflow-hidden">
+
+    <!-- Hero -->
+    <div class="glass hero p-4 p-lg-5 mb-4" data-aos="fade-up">
       <div class="row align-items-center g-4">
         <div class="col-lg-8">
-          <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
-            <span class="welcome-badge">স্বাগতম!</span>
-            <span class="badge-ultra">১৭০+ লেসন • ATOMIC</span>
+          <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+            <span class="welcome-badge">⚛️ ATOMIC ULTIMATE</span>
+            <span class="badge-ultra">300+ LESSONS</span>
+            <span class="badge-ultra" style="background:linear-gradient(135deg,#10b981,#059669);">6 KEYBOARDS</span>
           </div>
-          <h1 class="glow-text mb-2 display-5 fw-bold">বাংলা টাইপিং একাডেমি</h1>
-          <p class="lead mb-3 opacity-90">যুক্তবর্ণ, কার-ফলা, শব্দ, বাক্য — সব পারমাণবিক নিখুঁত</p>
+          <h1 class="glow-text mb-2 display-5 fw-bold" data-i18n="heroTitle">বাংলা টাইপিং একাডেমি</h1>
+          <p class="lead mb-3 opacity-90" data-i18n="heroSub">যুক্তবর্ণ, কার-ফলা, শব্দ, বাক্য — সব পারমাণবিক নিখুঁত</p>
           <div class="d-flex flex-wrap gap-2">
             <button class="btn btn-ultra btn-lg" onclick="app.openLesson(1)">
               <i class="bi bi-play-fill"></i> শুরু করুন
@@ -82,161 +107,225 @@
               <i class="bi bi-lightning-charge"></i> ডেইলি চ্যালেঞ্জ
             </button>
             <button class="btn btn-outline-info btn-lg" onclick="app.showPage('lessons')">
-              <i class="bi bi-journal-bookmark"></i> সব লেসন
+              <i class="bi bi-journal-text"></i> সব লেসন
             </button>
           </div>
         </div>
         <div class="col-lg-4 text-center d-none d-lg-block">
-          <div class="hero-emoji">⌨️</div>
+          <div class="hero-emoji">⚛️</div>
         </div>
       </div>
     </div>
 
+    <!-- Stats -->
     <div class="row g-3 mb-4">
-      <div class="col-6 col-md-3"><div class="stat-card glass">
-        <div class="stat-icon-wrap"><i class="bi bi-speedometer2 c1"></i></div>
-        <h3 id="statWPM" data-value="0">0</h3><small>WPM গতি</small>
-        <div class="stat-trend" id="wpmTrend"></div>
-      </div></div>
-      <div class="col-6 col-md-3"><div class="stat-card glass">
-        <div class="stat-icon-wrap"><i class="bi bi-bullseye c2"></i></div>
-        <h3 id="statAccuracy" data-value="0">0%</h3><small>নির্ভুলতা</small>
-        <div class="stat-trend" id="accTrend"></div>
-      </div></div>
-      <div class="col-6 col-md-3"><div class="stat-card glass">
-        <div class="stat-icon-wrap"><i class="bi bi-trophy-fill c3"></i></div>
-        <h3 id="statCompleted">0/170</h3><small>লেসন সম্পন্ন</small>
-        <div class="mini-progress"><div id="completedProgress" class="mini-progress-bar"></div></div>
-      </div></div>
-      <div class="col-6 col-md-3"><div class="stat-card glass">
-        <div class="stat-icon-wrap"><i class="bi bi-fire c4"></i></div>
-        <h3 id="statStreak">0</h3><small>দিন স্ট্রিক</small>
-        <div class="stat-trend" id="streakTrend"></div>
-      </div></div>
-    </div>
-
-    <div class="row g-3 mb-4">
-      <div class="col-lg-8"><div class="glass p-4 h-100">
-        <h5 class="mb-3"><i class="bi bi-graph-up-arrow text-primary"></i> অগ্রগতি</h5>
-        <div class="chart-wrapper"><canvas id="progressChart"></canvas></div>
-      </div></div>
-      <div class="col-lg-4"><div class="glass p-4 h-100">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <h5 class="mb-0"><i class="bi bi-award-fill text-warning"></i> ব্যাজ</h5>
-          <span class="badge-count" id="badgeCount">0/12</span>
+      <div class="col-6 col-md-3" data-aos="fade-up" data-aos-delay="50">
+        <div class="stat-card glass">
+          <div class="stat-icon-wrap"><i class="bi bi-speedometer2 c1"></i></div>
+          <h3 id="statWPM" data-value="0">0</h3>
+          <small>WPM গতি</small>
+          <div class="stat-trend" id="wpmTrend"></div>
         </div>
-        <div id="badgesArea" class="badges-grid"></div>
-      </div></div>
-    </div>
-
-    <div class="row g-3 mb-4">
-      <div class="col-lg-7"><div class="glass p-4 h-100">
-        <h5 class="mb-3"><i class="bi bi-calendar-week text-info"></i> সাপ্তাহিক অ্যাক্টিভিটি</h5>
-        <div class="chart-wrapper-sm"><canvas id="weeklyChart"></canvas></div>
-      </div></div>
-      <div class="col-lg-5"><div class="glass p-4 h-100">
-        <h5 class="mb-3"><i class="bi bi-trophy text-warning"></i> সেরা লেসন</h5>
-        <div id="topLessons" class="top-lessons-list">
-          <div class="text-center opacity-50 py-4">এখনো কোনো লেসন সম্পন্ন হয়নি</div>
+      </div>
+      <div class="col-6 col-md-3" data-aos="fade-up" data-aos-delay="100">
+        <div class="stat-card glass">
+          <div class="stat-icon-wrap"><i class="bi bi-bullseye c2"></i></div>
+          <h3 id="statAccuracy" data-value="0">0%</h3>
+          <small>নির্ভুলতা</small>
+          <div class="stat-trend" id="accTrend"></div>
         </div>
-      </div></div>
+      </div>
+      <div class="col-6 col-md-3" data-aos="fade-up" data-aos-delay="150">
+        <div class="stat-card glass">
+          <div class="stat-icon-wrap"><i class="bi bi-trophy-fill c3"></i></div>
+          <h3 id="statCompleted">0/300</h3>
+          <small>লেসন সম্পন্ন</small>
+          <div class="mini-progress"><div id="completedProgress" class="mini-progress-bar"></div></div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3" data-aos="fade-up" data-aos-delay="200">
+        <div class="stat-card glass">
+          <div class="stat-icon-wrap"><i class="bi bi-fire c4"></i></div>
+          <h3 id="statStreak">0</h3>
+          <small>দিন স্ট্রিক</small>
+          <div class="stat-trend" id="streakTrend"></div>
+        </div>
+      </div>
     </div>
 
-    <div class="glass p-4 mb-4">
+    <!-- Charts row -->
+    <div class="row g-3 mb-4">
+      <div class="col-lg-8" data-aos="fade-up">
+        <div class="glass p-4 h-100">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0"><i class="bi bi-graph-up-arrow text-primary"></i> অগ্রগতি</h5>
+            <div class="d-flex gap-2">
+              <span class="chip-small c1">📈 WPM</span>
+              <span class="chip-small c2">🎯 Accuracy</span>
+            </div>
+          </div>
+          <div class="chart-wrapper"><canvas id="progressChart"></canvas></div>
+        </div>
+      </div>
+      <div class="col-lg-4" data-aos="fade-up" data-aos-delay="100">
+        <div class="glass p-4 h-100">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0"><i class="bi bi-award-fill text-warning"></i> ব্যাজ</h5>
+            <span class="badge-count" id="badgeCount">0/15</span>
+          </div>
+          <div id="badgesArea" class="badges-grid"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Weekly + Top -->
+    <div class="row g-3 mb-4">
+      <div class="col-lg-7" data-aos="fade-up">
+        <div class="glass p-4 h-100">
+          <h5 class="mb-3"><i class="bi bi-calendar-week text-info"></i> সাপ্তাহিক অ্যাক্টিভিটি</h5>
+          <div class="chart-wrapper-sm"><canvas id="weeklyChart"></canvas></div>
+        </div>
+      </div>
+      <div class="col-lg-5" data-aos="fade-up" data-aos-delay="100">
+        <div class="glass p-4 h-100">
+          <h5 class="mb-3"><i class="bi bi-star text-warning"></i> সেরা লেসন</h5>
+          <div id="topLessons" class="top-lessons-list">
+            <div class="text-center opacity-50 py-4">এখনো কোনো লেসন সম্পন্ন হয়নি</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick actions -->
+    <div class="glass p-4 mb-4" data-aos="fade-up">
       <h5 class="mb-3"><i class="bi bi-lightning-charge-fill text-warning"></i> দ্রুত অ্যাকশন</h5>
       <div class="row g-3">
         <div class="col-6 col-md-4 col-lg-2"><button class="quick-action" onclick="app.openLesson(1)"><i class="bi bi-play-circle"></i><span>শুরু</span></button></div>
-        <div class="col-6 col-md-4 col-lg-2"><button class="quick-action" onclick="app.showPage('lessons')"><i class="bi bi-journal-bookmark"></i><span>লেসন</span></button></div>
+        <div class="col-6 col-md-4 col-lg-2"><button class="quick-action" onclick="app.showPage('lessons')"><i class="bi bi-journal-text"></i><span>লেসন</span></button></div>
         <div class="col-6 col-md-4 col-lg-2"><button class="quick-action" onclick="app.showPage('exam')"><i class="bi bi-trophy"></i><span>পরীক্ষা</span></button></div>
         <div class="col-6 col-md-4 col-lg-2"><button class="quick-action" onclick="app.showPage('keyboard')"><i class="bi bi-keyboard"></i><span>কীবোর্ড</span></button></div>
         <div class="col-6 col-md-4 col-lg-2"><button class="quick-action" onclick="app.showPage('game')"><i class="bi bi-controller"></i><span>গেম</span></button></div>
-        <div class="col-6 col-md-4 col-lg-2"><button class="quick-action" onclick="app.showPage('stats')"><i class="bi bi-bar-chart-line"></i><span>পরিসংখ্যান</span></button></div>
+        <div class="col-6 col-md-4 col-lg-2"><button class="quick-action" onclick="app.showPage('stats')"><i class="bi bi-graph-up"></i><span>পরিসংখ্যান</span></button></div>
       </div>
     </div>
 
+    <!-- Recent + Tips -->
     <div class="row g-3">
-      <div class="col-lg-8"><div class="glass p-4 h-100">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <h5 class="mb-0"><i class="bi bi-clock-history text-success"></i> সাম্প্রতিক লেসন</h5>
-          <button class="btn btn-sm btn-filter" onclick="app.showPage('lessons')">সব দেখুন →</button>
+      <div class="col-lg-8" data-aos="fade-up">
+        <div class="glass p-4 h-100">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0"><i class="bi bi-clock-history text-success"></i> সাম্প্রতিক লেসন</h5>
+            <button class="btn btn-sm btn-filter" onclick="app.showPage('lessons')">সব দেখুন →</button>
+          </div>
+          <div id="recentLessons" class="recent-lessons-list">
+            <div class="text-center opacity-50 py-4">এখনো কোনো লেসন সম্পন্ন হয়নি</div>
+          </div>
         </div>
-        <div id="recentLessons" class="recent-lessons-list">
-          <div class="text-center opacity-50 py-4">এখনো কোনো লেসন সম্পন্ন হয়নি</div>
+      </div>
+      <div class="col-lg-4" data-aos="fade-up" data-aos-delay="100">
+        <div class="glass p-4 h-100 tips-card">
+          <h5 class="mb-3"><i class="bi bi-lightbulb text-warning"></i> আজকের টিপস</h5>
+          <div class="tip-icon">💡</div>
+          <p class="tip-text" id="dailyTip">প্রতিদিন ১৫ মিনিট অনুশীলন করুন।</p>
+          <button class="btn btn-sm btn-outline-warning w-100 mt-3" onclick="app.nextTip()">
+            <i class="bi bi-arrow-clockwise"></i> নতুন টিপস
+          </button>
         </div>
-      </div></div>
-      <div class="col-lg-4"><div class="glass p-4 h-100 tips-card">
-        <h5 class="mb-3"><i class="bi bi-lightbulb text-warning"></i> আজকের টিপস</h5>
-        <div class="tip-icon">💡</div>
-        <p class="tip-text" id="dailyTip">প্রতিদিন ১৫ মিনিট অনুশীলন করুন।</p>
-        <button class="btn btn-sm btn-outline-warning w-100 mt-3" onclick="app.nextTip()">
-          <i class="bi bi-arrow-clockwise"></i> নতুন টিপস
-        </button>
-      </div></div>
+      </div>
     </div>
+
   </section>
 
-  <!-- LESSONS -->
+  <!-- ═══════ LESSONS ═══════ -->
   <section class="page" id="page-lessons">
     <div class="glass p-3 mb-3">
       <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
-        <h4 class="mb-0"><i class="bi bi-journal-bookmark-fill"></i> লেসন <span class="badge bg-primary" id="lessonCount">0</span></h4>
+        <h4 class="mb-0"><i class="bi bi-journal-text"></i> লেসন <span class="badge bg-primary" id="lessonCount">0</span></h4>
+        <div class="d-flex flex-wrap gap-1" id="groupFilters"></div>
       </div>
-      <input type="search" id="lessonSearch" class="form-control" placeholder="🔍 লেসন খুঁজুন...">
+      <input type="search" id="lessonSearch" class="form-control glass-input" placeholder="🔍 লেসন খুঁজুন...">
     </div>
     <div id="lessonsGrid" class="row g-3"></div>
   </section>
 
-  <!-- TYPING -->
+  <!-- ═══════ TYPING ═══════ -->
   <section class="page" id="page-typing">
     <div class="glass overflow-hidden">
       <div class="typing-head p-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
-        <div><i class="bi bi-pencil-square"></i> <strong id="lessonTitle">লেসন</strong></div>
+        <div class="d-flex align-items-center gap-2">
+          <button class="btn btn-sm btn-outline-light" onclick="app.showPage('lessons')"><i class="bi bi-arrow-left"></i></button>
+          <strong id="lessonTitle">লেসন</strong>
+          <span class="badge bg-info" id="lessonLevel">সহজ</span>
+        </div>
         <div class="d-flex flex-wrap gap-2">
           <span class="chip"><i class="bi bi-clock"></i> <span id="timer">0:00</span></span>
           <span class="chip c3"><i class="bi bi-lightning-fill"></i> <span id="wpm">0</span> WPM</span>
           <span class="chip c2"><i class="bi bi-check-circle-fill"></i> <span id="accuracy">100</span>%</span>
           <span class="chip c4"><i class="bi bi-x-circle-fill"></i> <span id="errors">0</span></span>
+          <span class="chip" style="background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff;border:none;"><i class="bi bi-fire"></i> <span id="combo">0</span>x</span>
         </div>
       </div>
       <div class="p-3 p-lg-4">
         <div id="lessonTip" class="lesson-tip mb-3"></div>
         <div id="textDisplay" class="text-display mb-3"></div>
-        <textarea id="typeInput" class="form-control type-input mb-3" rows="3" placeholder="এখানে টাইপ করুন..." spellcheck="false" autocomplete="off"></textarea>
+        <textarea id="typeInput" class="form-control type-input mb-3" rows="3" placeholder="এখানে টাইপ করুন..." spellcheck="false" autocomplete="off" autocorrect="off"></textarea>
         <div class="d-flex flex-wrap gap-2 mb-3">
           <button class="btn btn-ultra" onclick="app.restartLesson()"><i class="bi bi-arrow-clockwise"></i> পুনরায়</button>
           <button class="btn btn-success" onclick="app.nextLesson()"><i class="bi bi-arrow-right"></i> পরবর্তী</button>
-          <button class="btn btn-outline-light" onclick="app.showPage('lessons')">← ফিরে যান</button>
+          <button class="btn btn-info" onclick="app.showCertificate()"><i class="bi bi-award"></i> সার্টিফিকেট</button>
+          <button class="btn btn-outline-warning" onclick="app.toggleFocus()"><i class="bi bi-fullscreen"></i> ফোকাস</button>
         </div>
-        <div class="progress glass-progress">
+        <div class="progress glass-progress mb-2">
           <div id="lessonProgress" class="progress-bar bg-gradient-primary" style="width:0%"></div>
         </div>
         <div class="live-kb-wrap mt-4">
-          <h6 class="mb-2"><i class="bi bi-keyboard"></i> বিজয় কীবোর্ড — লাইভ:</h6>
+          <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+            <h6 class="mb-0"><i class="bi bi-keyboard"></i> লাইভ কীবোর্ড:</h6>
+            <select id="kbLayoutSelect" class="form-select glass-input" style="width:auto;font-size:.85rem;padding:6px 12px;" onchange="app.setKeyboardLayout(this.value)">
+              <option value="jatiya">জাতীয় কীবোর্ড</option>
+              <option value="bijoy">বিজয় কীবোর্ড</option>
+              <option value="avro">অভ্র কীবোর্ড</option>
+              <option value="inscript">ইনস্ক্রিপ্ট</option>
+              <option value="ridmik">রিদ্মিক</option>
+              <option value="probhat">প্রভাত</option>
+            </select>
+          </div>
           <div id="liveKbContainer" class="live-kb-container"></div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- EXAM -->
+  <!-- ═══════ EXAM ═══════ -->
   <section class="page" id="page-exam">
     <div class="glass p-4">
-      <h3><i class="bi bi-trophy-fill c3"></i> টাইপিং পরীক্ষা</h3>
+      <h3 class="mb-3"><i class="bi bi-trophy-fill c3"></i> টাইপিং পরীক্ষা</h3>
       <p>সময় বেছে নিন:</p>
       <div class="d-flex flex-wrap gap-2 mb-3">
         <button class="btn btn-outline-warning" onclick="app.startExam(60)">১ মিনিট</button>
         <button class="btn btn-outline-warning" onclick="app.startExam(120)">২ মিনিট</button>
         <button class="btn btn-outline-warning" onclick="app.startExam(300)">৫ মিনিট</button>
+        <button class="btn btn-outline-danger" onclick="app.startExam(600)">১০ মিনিট</button>
       </div>
       <div id="examArea"></div>
     </div>
   </section>
 
-  <!-- KEYBOARD -->
+  <!-- ═══════ KEYBOARD ═══════ -->
   <section class="page" id="page-keyboard">
     <div class="glass p-4">
-      <h3 class="mb-3"><i class="bi bi-keyboard-fill"></i> বিজয় কীবোর্ড (ইউনিকোড)</h3>
-      <p class="text-muted">নিচের কীবোর্ডে ক্লিক করে টাইপ করুন — য় ড় ঢ় ৎ ং ঃ ঁ সব কাজ করবে</p>
+      <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <h3 class="mb-0"><i class="bi bi-keyboard-fill"></i> ভার্চুয়াল কীবোর্ড</h3>
+        <select id="standaloneLayoutSelect" class="form-select glass-input" style="width:auto;" onchange="app.setStandaloneLayout(this.value)">
+          <option value="jatiya">জাতীয় কীবোর্ড</option>
+          <option value="bijoy">বিজয় কীবোর্ড</option>
+          <option value="avro">অভ্র কীবোর্ড</option>
+          <option value="inscript">ইনস্ক্রিপ্ট</option>
+          <option value="ridmik">রিদ্মিক</option>
+          <option value="probhat">প্রভাত</option>
+        </select>
+      </div>
+      <p class="text-muted small">ক্লিক করে টাইপ করুন অথবা সরাসরি কী চাপুন</p>
       <div id="virtualKeyboard" class="virtual-kb-container"></div>
       <div class="mt-3">
         <label class="form-label">টেস্ট করুন:</label>
@@ -245,23 +334,31 @@
     </div>
   </section>
 
-  <!-- GAME -->
+  <!-- ═══════ GAME ═══════ -->
   <section class="page" id="page-game">
     <div class="glass p-4 text-center">
       <h3><i class="bi bi-controller"></i> টাইপিং গেম</h3>
       <p>শব্দ টাইপ করে <kbd>Enter</kbd> চাপুন</p>
-      <button class="btn btn-ultra mb-3" onclick="app.startGame()"><i class="bi bi-play-fill"></i> গেম শুরু</button>
-      <button class="btn btn-outline-danger mb-3" onclick="app.stopGame()"><i class="bi bi-stop-fill"></i> থামান</button>
+      <div class="d-flex flex-wrap justify-content-center gap-2 mb-3">
+        <button class="btn btn-ultra" onclick="app.startGame('normal')"><i class="bi bi-play-fill"></i> সাধারণ</button>
+        <button class="btn btn-danger" onclick="app.startGame('hard')"><i class="bi bi-fire"></i> কঠিন</button>
+        <button class="btn btn-warning" onclick="app.startGame('insane')"><i class="bi bi-lightning"></i> অসম্ভব</button>
+        <button class="btn btn-outline-danger" onclick="app.stopGame()"><i class="bi bi-stop-fill"></i> থামান</button>
+      </div>
       <div id="gameArea" class="game-area"></div>
       <input type="text" id="gameInput" class="form-control mt-3 glass-input" placeholder="শব্দ টাইপ করে Enter চাপুন..." disabled autocomplete="off">
-      <div class="mt-2">স্কোর: <strong id="gameScore">0</strong> • লাইভ: <strong id="gameLives">3</strong> ❤️</div>
+      <div class="mt-2 d-flex justify-content-around flex-wrap">
+        <span>স্কোর: <strong id="gameScore" class="c3">0</strong></span>
+        <span>লাইভ: <strong id="gameLives" class="c4">3</strong> ❤️</span>
+        <span>কম্বো: <strong id="gameCombo" class="c1">0</strong> 🔥</span>
+      </div>
     </div>
   </section>
 
-  <!-- STATS -->
+  <!-- ═══════ STATS ═══════ -->
   <section class="page" id="page-stats">
     <div class="glass p-4">
-      <h3><i class="bi bi-bar-chart-line-fill"></i> পরিসংখ্যান</h3>
+      <h3><i class="bi bi-graph-up"></i> বিস্তারিত পরিসংখ্যান</h3>
       <div class="chart-wrapper-sm mt-3 mb-3"><canvas id="detailedChart"></canvas></div>
       <div class="table-responsive mt-3">
         <table class="table glass-table">
@@ -269,7 +366,7 @@
           <tbody id="historyTable"></tbody>
         </table>
       </div>
-      <div class="d-flex gap-2 mt-3">
+      <div class="d-flex gap-2 mt-3 flex-wrap">
         <button class="btn btn-outline-success" onclick="app.exportProgress()"><i class="bi bi-download"></i> এক্সপোর্ট</button>
         <button class="btn btn-outline-danger" onclick="app.resetProgress()"><i class="bi bi-trash"></i> রিসেট</button>
       </div>
@@ -278,7 +375,16 @@
 
 </main>
 
-<!-- TOAST -->
+<!-- ═══════════════ CERTIFICATE MODAL ═══════════════ -->
+<div class="modal fade" id="certModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content glass" style="border:2px solid var(--primary);">
+      <div class="modal-body p-4" id="certContent"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ TOAST ═══════════════ -->
 <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index:99999;">
   <div id="toast" class="toast glass-toast border-0">
     <div class="d-flex">
@@ -288,15 +394,20 @@
   </div>
 </div>
 
-<footer class="text-center py-3 small opacity-75">
-  © 2025 বাংলা টাইপিং একাডেমি — <strong class="glow-text">MOTTALAB MIA</strong> • ATOMIC PRO
+<!-- ═══════════════ FOOTER ═══════════════ -->
+<footer class="text-center py-3 small opacity-75 position-relative z-2">
+  © 2025 বাংলা টাইপিং একাডেমি — <strong class="glow-text">MOTTALAB MIA</strong> • ATOMIC ULTIMATE
 </footer>
 
+<!-- ═══════════════ SCRIPTS ═══════════════ -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
+<script src="js/layouts.js"></script>
 <script src="js/data.js"></script>
-<script src="js/keyboard.js"></script>
 <script src="js/animations.js"></script>
+<script src="js/keyboard.js"></script>
+<script src="js/engine.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>
