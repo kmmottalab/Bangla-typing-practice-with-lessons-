@@ -1,46 +1,51 @@
 /* ═══════════════════════════════════════════════════════════════
-   বাংলা টাইপিং একাডেমি — APP.JS
-   মূল অ্যাপ্লিকেশন লজিক (পারমাণবিক)
+   বাংলা টাইপিং একাডেমি — APP.JS (ATOMIC ULTIMATE)
+   চূড়ান্ত মূল অ্যাপ্লিকেশন
    ═══════════════════════════════════════════════════════════════ */
 
 class TypingApp {
   constructor() {
     /* ═══ State ═══ */
     this.currentLesson = null;
-    this.currentIndex = 0;
-    this.startTime = null;
-    this.timerInterval = null;
-    this.correctChars = 0;
-    this.wrongChars = 0;
-    this.totalTyped = 0;
+    this.currentSession = null;
     this.currentPage = 'dashboard';
     this.searchQuery = '';
-    this.lastWrongChar = null;
+    this.filterGroup = 'all';
+    this.startTime = null;
+    this.timerInterval = null;
+    this.comboCount = 0;
 
     /* ═══ Storage ═══ */
     this.progress = this.loadProgress();
     this.streak = this.loadStreak();
     this.settings = this.loadSettings();
+    this.theme = this.settings.theme || 'dark';
+    this.lang = this.settings.lang || 'bn';
+    this.soundEnabled = this.settings.sound !== false;
 
     /* ═══ Charts ═══ */
-    this.chart = null;
-    this.detailedChart = null;
+    this.progressChart = null;
     this.weeklyChart = null;
+    this.detailedChart = null;
     this.chartRetryCount = 0;
 
     /* ═══ Game ═══ */
     this.gameActive = false;
+    this.gameMode = 'normal';
     this.gameScore = 0;
     this.gameLives = 3;
+    this.gameCombo = 0;
     this.gameInterval = null;
     this.gameAnimIntervals = [];
-    this.gameFallingWords = [];
 
     /* ═══ Exam ═══ */
     this.examInterval = null;
     this.examActive = false;
     this.examText = '';
     this.examStartTime = null;
+
+    /* ═══ Focus ═══ */
+    this.focusMode = false;
 
     this.init();
   }
@@ -55,13 +60,22 @@ class TypingApp {
     this.setupGameInput();
     this.setupSearch();
     this.updateStreak();
+    this.applyTheme();
+    this.applyLang();
 
     /* ═══ Boot sequence ═══ */
-    const bootApp = () => {
+    const boot = () => {
       try {
         this.renderLessons();
         this.loadDashboard();
         this.renderStats();
+        this.renderGroupFilters();
+        this.initLayoutSelector();
+
+        if (typeof AOS !== 'undefined') {
+          AOS.init({ duration: 600, once: true, offset: 50 });
+        }
+
         console.log('%c✓ App Initialized', 'color:#10b981;font-weight:bold;');
       } catch (err) {
         console.error('Init error:', err);
@@ -69,28 +83,152 @@ class TypingApp {
     };
 
     if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', () => setTimeout(bootApp, 200));
+      document.addEventListener('DOMContentLoaded', () => setTimeout(boot, 250));
     } else {
-      setTimeout(bootApp, 200);
+      setTimeout(boot, 250);
     }
 
-    /* Force chart render */
+    /* Chart force render */
     setTimeout(() => {
-      this.renderChart();
+      this.renderProgressChart();
       if (document.getElementById('page-typing').classList.contains('active')) {
-        if (typeof initLiveKeyboard === 'function') initLiveKeyboard();
+        if (typeof initLiveKeyboard === 'function') initLiveKeyboard(this.settings.liveLayout || 'jatiya');
       }
-    }, 800);
+    }, 900);
 
-    /* Window resize */
+    /* Resize handler */
     window.addEventListener('resize', () => {
       if (this.currentPage === 'typing' && this.currentLesson) {
         setTimeout(() => this.updateHandIndicator(), 200);
       }
       if (this.currentPage === 'dashboard') {
-        setTimeout(() => this.renderChart(), 300);
+        setTimeout(() => this.renderProgressChart(), 300);
       }
     });
+
+    /* Sound state */
+    if (window.animations?.sound) {
+      window.animations.sound.enabled = this.soundEnabled;
+    }
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     STORAGE
+     ═══════════════════════════════════════════════════════ */
+  loadProgress() {
+    try { return JSON.parse(localStorage.getItem('bnAtomicProgress') || '{}'); }
+    catch (e) { return {}; }
+  }
+
+  saveProgress() {
+    try { localStorage.setItem('bnAtomicProgress', JSON.stringify(this.progress)); }
+    catch (e) {}
+  }
+
+  loadStreak() {
+    try { return JSON.parse(localStorage.getItem('bnAtomicStreak') || '{"days":0,"last":null}'); }
+    catch (e) { return { days: 0, last: null }; }
+  }
+
+  loadSettings() {
+    try { return JSON.parse(localStorage.getItem('bnAtomicSettings') || '{}'); }
+    catch (e) { return {}; }
+  }
+
+  saveSettings() {
+    try { localStorage.setItem('bnAtomicSettings', JSON.stringify(this.settings)); }
+    catch (e) {}
+  }
+
+  updateStreak() {
+    const today = new Date().toDateString();
+    if (this.streak.last === today) return;
+
+    const yesterday = new Date(Date.now() - 86400000).toDateString();
+    if (this.streak.last === yesterday) this.streak.days++;
+    else this.streak.days = 1;
+
+    this.streak.last = today;
+    try { localStorage.setItem('bnAtomicStreak', JSON.stringify(this.streak)); }
+    catch (e) {}
+
+    const el = document.getElementById('statStreak');
+    if (el) el.textContent = this.streak.days;
+
+    if (window.animations?.updateStreakFlame) {
+      animations.updateStreakFlame(this.streak.days);
+    }
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     THEME & LANG
+     ═══════════════════════════════════════════════════════ */
+  setupThemeToggle() {
+    const btn = document.getElementById('themeBtn');
+    if (btn) {
+      btn.addEventListener('click', () => this.toggleTheme());
+    }
+  }
+
+  applyTheme() {
+    document.documentElement.setAttribute('data-theme', this.theme);
+  }
+
+  toggleTheme() {
+    const themes = ['dark', 'light', 'neon'];
+    const cur = themes.indexOf(this.theme);
+    this.theme = themes[(cur + 1) % themes.length];
+    this.settings.theme = this.theme;
+    this.saveSettings();
+    this.applyTheme();
+
+    setTimeout(() => {
+      if (this.currentPage === 'dashboard') this.renderProgressChart();
+      if (this.currentPage === 'stats') this.renderStats();
+    }, 200);
+
+    if (window.animations?.sound) animations.sound.pop();
+
+    const names = { dark: 'ডার্ক', light: 'লাইট', neon: 'নিয়ন' };
+    this.showToast(`🎨 থিম: ${names[this.theme]}`);
+  }
+
+  applyLang() {
+    document.documentElement.setAttribute('data-lang', this.lang);
+  }
+
+  toggleLang() {
+    this.lang = this.lang === 'bn' ? 'en' : 'bn';
+    this.settings.lang = this.lang;
+    this.saveSettings();
+    this.applyLang();
+
+    const translations = {
+      bn: { dashboard: 'ড্যাশবোর্ড', lessons: 'লেসন', typing: 'টাইপিং', exam: 'পরীক্ষা', keyboard: 'কীবোর্ড', game: 'গেম', stats: 'পরিসংখ্যান' },
+      en: { dashboard: 'Dashboard', lessons: 'Lessons', typing: 'Typing', exam: 'Exam', keyboard: 'Keyboard', game: 'Game', stats: 'Statistics' }
+    };
+
+    const t = translations[this.lang];
+    Object.keys(t).forEach(key => {
+      document.querySelectorAll(`[data-i18n="${key}"]`).forEach(el => {
+        el.textContent = t[key];
+      });
+    });
+
+    this.showToast(this.lang === 'bn' ? '🇧🇩 বাংলা' : '🇬🇧 English');
+  }
+
+  toggleSound() {
+    this.soundEnabled = !this.soundEnabled;
+    this.settings.sound = this.soundEnabled;
+    this.saveSettings();
+
+    if (window.animations?.sound) {
+      window.animations.sound.enabled = this.soundEnabled;
+      if (this.soundEnabled) animations.sound.pop();
+    }
+
+    this.showToast(this.soundEnabled ? '🔊 সাউন্ড চালু' : '🔇 সাউন্ড বন্ধ');
   }
 
   /* ═══════════════════════════════════════════════════════
@@ -129,25 +267,28 @@ class TypingApp {
 
             if (name === 'dashboard') {
               this.loadDashboard();
-              setTimeout(() => this.renderChart(), 150);
+              setTimeout(() => this.renderProgressChart(), 150);
             }
 
             if (name === 'keyboard') {
               if (typeof initStandaloneKeyboard === 'function') {
-                initStandaloneKeyboard();
+                initStandaloneKeyboard(this.settings.standaloneLayout || 'jatiya');
               }
             }
 
             if (name === 'typing') {
               if (typeof initLiveKeyboard === 'function') {
-                initLiveKeyboard();
+                initLiveKeyboard(this.settings.liveLayout || 'jatiya');
               }
               setTimeout(() => {
-                if (typeof refreshLiveKeyboard === 'function') {
-                  refreshLiveKeyboard();
-                }
+                if (typeof refreshLiveKeyboard === 'function') refreshLiveKeyboard();
                 this.updateHandIndicator();
-              }, 250);
+              }, 300);
+            }
+
+            if (window.animations?.staggerIn) {
+              const activePage = document.querySelector('.page.active');
+              if (activePage) animations.staggerIn(activePage, '.glass, .stat-card, .lesson-card', 30);
             }
           } catch (err) {
             console.error('Page refresh error:', err);
@@ -162,78 +303,31 @@ class TypingApp {
   }
 
   /* ═══════════════════════════════════════════════════════
-     THEME
+     GROUP FILTERS
      ═══════════════════════════════════════════════════════ */
-  setupThemeToggle() {
-    const btn = document.getElementById('themeBtn');
-    if (!btn) return;
-    if (this.settings.theme) {
-      document.documentElement.setAttribute('data-theme', this.settings.theme);
-    }
-    btn.addEventListener('click', () => this.toggleTheme());
+  renderGroupFilters() {
+    const container = document.getElementById('groupFilters');
+    if (!container) return;
+
+    const groups = getSortedGroups();
+    let html = `<button class="btn-filter active" data-group="all" onclick="app.setGroupFilter('all', this)">সব (${LESSONS.length})</button>`;
+
+    groups.forEach(gid => {
+      const g = LESSON_GROUPS[gid];
+      const count = getLessonsByGroup(gid).length;
+      if (count > 0) {
+        html += `<button class="btn-filter" data-group="${gid}" onclick="app.setGroupFilter('${gid}', this)">${g.icon} ${g.name.split(' ')[1] || g.name} (${count})</button>`;
+      }
+    });
+
+    container.innerHTML = html;
   }
 
-  toggleTheme() {
-    const cur = document.documentElement.getAttribute('data-theme');
-    const next = cur === 'dark' ? 'light' : 'dark';
-    document.documentElement.setAttribute('data-theme', next);
-    this.settings.theme = next;
-    this.saveSettings();
-
-    setTimeout(() => {
-      if (this.currentPage === 'dashboard') this.renderChart();
-      if (this.currentPage === 'stats') this.renderStats();
-    }, 200);
-
-    if (window.animations?.sound) animations.sound.pop();
-  }
-
-  /* ═══════════════════════════════════════════════════════
-     STORAGE
-     ═══════════════════════════════════════════════════════ */
-  loadProgress() {
-    try { return JSON.parse(localStorage.getItem('bnTypingProgress') || '{}'); }
-    catch (e) { return {}; }
-  }
-
-  saveProgress() {
-    try { localStorage.setItem('bnTypingProgress', JSON.stringify(this.progress)); }
-    catch (e) {}
-  }
-
-  loadStreak() {
-    try { return JSON.parse(localStorage.getItem('bnTypingStreak') || '{"days":0,"last":null}'); }
-    catch (e) { return { days: 0, last: null }; }
-  }
-
-  loadSettings() {
-    try { return JSON.parse(localStorage.getItem('bnTypingSettings') || '{"theme":"dark"}'); }
-    catch (e) { return { theme: 'dark' }; }
-  }
-
-  saveSettings() {
-    try { localStorage.setItem('bnTypingSettings', JSON.stringify(this.settings)); }
-    catch (e) {}
-  }
-
-  updateStreak() {
-    const today = new Date().toDateString();
-    if (this.streak.last === today) return;
-
-    const yesterday = new Date(Date.now() - 86400000).toDateString();
-    if (this.streak.last === yesterday) this.streak.days++;
-    else this.streak.days = 1;
-
-    this.streak.last = today;
-    try { localStorage.setItem('bnTypingStreak', JSON.stringify(this.streak)); }
-    catch (e) {}
-
-    const el = document.getElementById('statStreak');
-    if (el) el.textContent = this.streak.days;
-
-    if (window.animations?.updateStreakFlame) {
-      animations.updateStreakFlame(this.streak.days);
-    }
+  setGroupFilter(gid, btn) {
+    this.filterGroup = gid;
+    document.querySelectorAll('#groupFilters .btn-filter').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    this.renderLessons();
   }
 
   /* ═══════════════════════════════════════════════════════
@@ -256,21 +350,26 @@ class TypingApp {
     if (!grid) return;
 
     let lessons = LESSONS;
+    if (this.filterGroup !== 'all') {
+      lessons = lessons.filter(l => l.group === this.filterGroup);
+    }
     if (this.searchQuery) {
       lessons = lessons.filter(l =>
         l.title.toLowerCase().includes(this.searchQuery) ||
-        l.text.toLowerCase().includes(this.searchQuery)
+        l.text.toLowerCase().includes(this.searchQuery) ||
+        (l.tip && l.tip.toLowerCase().includes(this.searchQuery))
       );
     }
 
-    const count = document.getElementById('lessonCount');
-    if (count) count.textContent = lessons.length;
+    const countEl = document.getElementById('lessonCount');
+    if (countEl) countEl.textContent = lessons.length;
 
     if (lessons.length === 0) {
-      grid.innerHTML = '<div class="col-12 text-center py-5 opacity-75">কোনো লেসন পাওয়া যায়নি</div>';
+      grid.innerHTML = '<div class="col-12 text-center py-5 opacity-75"><h5>কোনো লেসন পাওয়া যায়নি</h5><p class="small">অন্য ফিল্টার বা সার্চ করুন</p></div>';
       return;
     }
 
+    /* Group by group */
     const grouped = {};
     lessons.forEach(l => {
       const g = l.group || 'other';
@@ -278,16 +377,16 @@ class TypingApp {
       grouped[g].push(l);
     });
 
-    const groupOrder = ['bottom-row', 'top-row', 'special', 'shift', 'swaroborno', 'numbers', 'juktakkhor', 'bakyo', 'other'];
+    const groupOrder = getSortedGroups();
     let html = '';
 
     groupOrder.forEach(gid => {
       if (!grouped[gid]) return;
-      const gInfo = LESSON_GROUPS[gid] || { name: gid, icon: '📚', color: '#6366f1', desc: '' };
+      const gInfo = LESSON_GROUPS[gid];
       const items = grouped[gid];
 
       html += `
-        <div class="col-12 mb-2 mt-3">
+        <div class="col-12 mb-2 mt-3" data-aos="fade-right">
           <div class="group-header glass p-3" style="border-left: 5px solid ${gInfo.color};">
             <div class="d-flex align-items-center gap-2 flex-wrap">
               <span style="font-size:1.5rem;">${gInfo.icon}</span>
@@ -301,16 +400,17 @@ class TypingApp {
 
       items.forEach(l => {
         const done = this.progress[l.id];
-        const typeClass = 't-' + (l.group || 'practice');
+        const typeClass = 'tbadge';
         html += `
-          <div class="col-6 col-md-4 col-lg-3">
+          <div class="col-6 col-md-4 col-lg-3" data-aos="fade-up" data-aos-delay="${Math.min(items.indexOf(l) * 30, 300)}">
             <div class="lesson-card glass ${done ? 'done' : ''}" data-id="${l.id}">
               <div class="d-flex justify-content-between align-items-start mb-2">
                 <span class="lesson-num">${l.id}</span>
-                <span class="tbadge ${typeClass}">${l.level || 'সহজ'}</span>
+                <span class="${typeClass}">${l.level || 'সহজ'}</span>
               </div>
-              <h6 class="mb-1">${l.title}</h6>
+              <h6 class="mb-1 text-truncate">${l.title}</h6>
               <p class="small mb-0 opacity-75 text-truncate">${l.text}</p>
+              ${done ? `<small class="text-success d-block mt-1">✓ ${done.wpm} WPM</small>` : ''}
             </div>
           </div>
         `;
@@ -325,25 +425,29 @@ class TypingApp {
       });
     });
 
-    if (window.animations?.staggerIn) {
-      animations.staggerIn(grid, '.lesson-card', 15);
-    }
+    if (typeof AOS !== 'undefined') AOS.refresh();
   }
 
   /* ═══════════════════════════════════════════════════════
-     OPEN LESSON
+     TYPING — OPEN LESSON
      ═══════════════════════════════════════════════════════ */
+  setupTypingInput() {
+    const input = document.getElementById('typeInput');
+    if (!input) return;
+
+    input.addEventListener('input', (e) => this.handleTyping(e));
+    input.addEventListener('paste', (e) => e.preventDefault());
+    input.addEventListener('drop', (e) => e.preventDefault());
+  }
+
   openLesson(id) {
-    const lesson = LESSONS.find(l => l.id === id);
+    const lesson = getLessonById(id);
     if (!lesson) return;
 
     this.currentLesson = lesson;
-    this.currentIndex = 0;
+    this.currentSession = new TypingSession(lesson);
     this.startTime = null;
-    this.correctChars = 0;
-    this.wrongChars = 0;
-    this.totalTyped = 0;
-    this.lastWrongChar = null;
+    this.comboCount = 0;
 
     if (this.timerInterval) {
       clearInterval(this.timerInterval);
@@ -351,20 +455,29 @@ class TypingApp {
     }
     if (window.animations?.resetCombo) animations.resetCombo();
 
+    /* Title */
     const titleEl = document.getElementById('lessonTitle');
     if (titleEl) titleEl.textContent = `${id}. ${lesson.title}`;
+    const levelEl = document.getElementById('lessonLevel');
+    if (levelEl) levelEl.textContent = lesson.level || 'সহজ';
 
+    /* Tip */
+    const tipEl = document.getElementById('lessonTip');
+    if (tipEl) tipEl.textContent = lesson.tip || 'নিয়মিত অনুশীলন করুন';
+
+    /* Input reset */
     const input = document.getElementById('typeInput');
     if (input) {
       input.value = '';
       input.disabled = false;
-      input.setAttribute('data-expected', lesson.text);
     }
 
+    /* Stats reset */
     this.updateStatDisplay('timer', '0:00');
     this.updateStatDisplay('wpm', '0');
     this.updateStatDisplay('accuracy', '100');
     this.updateStatDisplay('errors', '0');
+    this.updateStatDisplay('combo', '0');
 
     const progressBar = document.getElementById('lessonProgress');
     if (progressBar) progressBar.style.width = '0%';
@@ -372,11 +485,11 @@ class TypingApp {
     this.renderTextDisplay();
     this.showPage('typing');
 
+    /* Setup keyboard */
     setTimeout(() => {
       if (typeof initLiveKeyboard === 'function') {
-        initLiveKeyboard();
+        initLiveKeyboard(this.settings.liveLayout || 'jatiya');
       }
-
       setTimeout(() => {
         if (typeof highlightLessonKeysOnKeyboard === 'function') {
           highlightLessonKeysOnKeyboard(lesson.keys || []);
@@ -393,165 +506,123 @@ class TypingApp {
   }
 
   /* ═══════════════════════════════════════════════════════
-     TEXT DISPLAY
+     TEXT DISPLAY — Grapheme-aware
      ═══════════════════════════════════════════════════════ */
   renderTextDisplay() {
     const disp = document.getElementById('textDisplay');
     if (!disp || !this.currentLesson) return;
 
-    const target = this.currentLesson.text;
-    const typed = document.getElementById('typeInput')?.value || '';
-    const targetChars = Array.from(target);
-    const typedChars = Array.from(typed);
+    const targetG = graphemeEngine.split(this.currentLesson.text);
+    const typedG = graphemeEngine.split(document.getElementById('typeInput')?.value || '');
 
-    disp.innerHTML = targetChars.map((ch, i) => {
+    disp.innerHTML = targetG.map((g, i) => {
       let cls = 'char';
-      if (i < typedChars.length) {
-        cls += typedChars[i] === ch ? ' correct' : ' wrong';
-      } else if (i === typedChars.length) {
+      if (i < typedG.length) {
+        cls += typedG[i] === g ? ' correct' : ' wrong';
+      } else if (i === typedG.length) {
         cls += ' current';
       }
-      const display = ch === ' ' ? '&nbsp;' : (ch === '\n' ? '<br>' : ch);
+      const display = g === ' ' ? '&nbsp;' : (g === '\n' ? '<br>' : g);
       return `<span class="${cls}" data-idx="${i}">${display}</span>`;
     }).join('');
   }
 
   /* ═══════════════════════════════════════════════════════
-     TYPING INPUT
+     TYPING HANDLER — Grapheme-aware
      ═══════════════════════════════════════════════════════ */
-  setupTypingInput() {
-    const input = document.getElementById('typeInput');
-    if (!input) return;
-
-    input.addEventListener('input', (e) => this.handleTyping(e));
-    input.addEventListener('paste', (e) => e.preventDefault());
-    input.addEventListener('drop', (e) => e.preventDefault());
-  }
-
   handleTyping(e) {
-    if (!this.currentLesson) return;
+    if (!this.currentLesson || !this.currentSession) return;
 
-    const target = this.currentLesson.text;
     const val = e.target.value;
-    const targetChars = Array.from(target);
-    const typedChars = Array.from(val);
+    const targetG = graphemeEngine.split(this.currentLesson.text);
+    const typedG = graphemeEngine.split(val);
 
-    if (!this.startTime && typedChars.length > 0) {
+    if (!this.startTime && typedG.length > 0) {
       this.startTime = Date.now();
+      this.currentSession.start();
       this.startTimer();
     }
 
-    let correct = 0;
-    let wrong = 0;
-    let firstWrongIdx = -1;
+    /* Update session */
+    this.currentSession.updateTyped(val);
 
+    /* Re-render display */
     const disp = document.getElementById('textDisplay');
     if (disp) {
-      disp.innerHTML = targetChars.map((ch, i) => {
+      let correct = 0, wrong = 0;
+      disp.innerHTML = targetG.map((g, i) => {
         let cls = 'char';
-        if (i < typedChars.length) {
-          if (typedChars[i] === ch) {
+        if (i < typedG.length) {
+          if (typedG[i] === g) {
             cls += ' correct';
             correct++;
           } else {
             cls += ' wrong';
             wrong++;
-            if (firstWrongIdx === -1) firstWrongIdx = i;
+            if (window.animations?.sound) {
+              aiEngine.recordError(g);
+            }
           }
-        } else if (i === typedChars.length) {
+        } else if (i === typedG.length) {
           cls += ' current';
         }
-        const display = ch === ' ' ? '&nbsp;' : (ch === '\n' ? '<br>' : ch);
+        const display = g === ' ' ? '&nbsp;' : (g === '\n' ? '<br>' : g);
         return `<span class="${cls}" data-idx="${i}">${display}</span>`;
       }).join('');
     }
 
-    const prevWrong = this.wrongChars;
-    const prevCorrect = this.correctChars;
+    /* Sound + effects */
+    const report = this.currentSession.getReport();
+    const prevCorrect = parseInt(this.correctChars || 0);
+    const prevWrong = parseInt(this.wrongChars || 0);
 
-    if (wrong > prevWrong && typedChars.length > 0) {
+    if (report.wrong > prevWrong) {
       if (window.animations?.triggerWrongChar) animations.triggerWrongChar(null);
       if (window.animations?.shakeScreen) animations.shakeScreen(3, 180);
-      if (window.liveKeyboard && firstWrongIdx >= 0) {
-        window.liveKeyboard.flashWrong(targetChars[firstWrongIdx]);
-      }
-    } else if (correct > prevCorrect) {
+      this.comboCount = 0;
+    } else if (report.correct > prevCorrect) {
       if (window.animations?.triggerCorrectChar) animations.triggerCorrectChar(null);
+      this.comboCount++;
     }
 
-    this.correctChars = correct;
-    this.wrongChars = wrong;
-    this.totalTyped = typedChars.length;
+    this.correctChars = report.correct;
+    this.wrongChars = report.wrong;
 
-    const wpm = this.calcWPM();
-    const acc = typedChars.length ? Math.round((correct / typedChars.length) * 100) : 100;
+    /* Update display */
+    this.updateStatDisplay('wpm', report.wpm);
+    this.updateStatDisplay('accuracy', report.accuracy);
+    this.updateStatDisplay('errors', report.wrong);
+    this.updateStatDisplay('combo', this.comboCount);
 
-    this.updateStatDisplay('wpm', wpm);
-    this.updateStatDisplay('accuracy', acc);
-    this.updateStatDisplay('errors', wrong);
-
+    /* Progress bar */
     const progressBar = document.getElementById('lessonProgress');
     if (progressBar) {
-      progressBar.style.width = Math.min(100, (typedChars.length / targetChars.length) * 100) + '%';
+      progressBar.style.width = Math.min(100, (typedG.length / targetG.length) * 100) + '%';
     }
 
-    if (typedChars.length > 0 && window.liveKeyboard) {
-      const lastChar = typedChars[typedChars.length - 1];
-      window.liveKeyboard.flashByChar(lastChar);
+    /* Flash pressed key on keyboard */
+    if (typedG.length > 0 && window.liveKeyboard) {
+      const lastG = typedG[typedG.length - 1];
+      window.liveKeyboard.flashByChar(lastG);
     }
 
+    /* Update hand */
     this.updateHandIndicator();
 
+    /* Combo meter */
     if (window.animations?.updateComboMeter) {
-      animations.updateComboMeter(window._comboCount || 0);
+      animations.updateComboMeter(this.comboCount);
     }
 
-    if (typedChars.length >= targetChars.length) {
-      this.finishLesson(wpm, acc);
+    /* Complete? */
+    if (typedG.length >= targetG.length) {
+      this.finishLesson(report);
     }
   }
 
   /* ═══════════════════════════════════════════════════════
-     HAND INDICATOR
+     TIMER
      ═══════════════════════════════════════════════════════ */
-  updateHandIndicator() {
-    if (!this.currentLesson) return;
-
-    const target = this.currentLesson.text;
-    const typed = document.getElementById('typeInput')?.value || '';
-    const targetChars = Array.from(target);
-    const typedLen = Array.from(typed).length;
-
-    if (typedLen >= targetChars.length) {
-      if (typeof clearKeyboardTarget === 'function') clearKeyboardTarget();
-      return;
-    }
-
-    const nextChar = targetChars[typedLen];
-    if (!nextChar) return;
-
-    let attempts = 0;
-    const tryPoint = () => {
-      attempts++;
-      if (typeof pointHandAtNextChar === 'function' && window.liveKeyboard) {
-        pointHandAtNextChar(nextChar);
-      } else if (attempts < 5) {
-        setTimeout(tryPoint, 150);
-      }
-    };
-    tryPoint();
-  }
-
-  /* ═══════════════════════════════════════════════════════
-     WPM / TIMER
-     ═══════════════════════════════════════════════════════ */
-  calcWPM() {
-    if (!this.startTime) return 0;
-    const minutes = (Date.now() - this.startTime) / 60000;
-    if (minutes < 0.001) return 0;
-    return Math.round((this.correctChars / 5) / minutes);
-  }
-
   startTimer() {
     if (this.timerInterval) clearInterval(this.timerInterval);
     this.timerInterval = setInterval(() => {
@@ -560,15 +631,48 @@ class TypingApp {
       const mm = Math.floor(sec / 60);
       const ss = String(sec % 60).padStart(2, '0');
       this.updateStatDisplay('timer', `${mm}:${ss}`);
-      const wpm = this.calcWPM();
-      this.updateStatDisplay('wpm', wpm);
+
+      /* Live WPM */
+      if (this.currentSession) {
+        const report = this.currentSession.getReport();
+        this.updateStatDisplay('wpm', report.wpm);
+      }
     }, 500);
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     HAND INDICATOR
+     ═══════════════════════════════════════════════════════ */
+  updateHandIndicator() {
+    if (!this.currentLesson) return;
+
+    const typed = document.getElementById('typeInput')?.value || '';
+    const nextChar = graphemeEngine.getNextChar(this.currentLesson.text, typed);
+
+    if (!nextChar) {
+      if (typeof clearKeyboardTarget === 'function') clearKeyboardTarget();
+      return;
+    }
+
+    /* যুক্তাক্ষরের প্রথম অক্ষর থেকে কী নির্ধারণ */
+    const firstChar = nextChar.charAt(0);
+
+    let attempts = 0;
+    const tryPoint = () => {
+      attempts++;
+      if (typeof pointHandAtNextChar === 'function' && window.liveKeyboard) {
+        pointHandAtNextChar(firstChar);
+      } else if (attempts < 5) {
+        setTimeout(tryPoint, 150);
+      }
+    };
+    tryPoint();
   }
 
   /* ═══════════════════════════════════════════════════════
      FINISH LESSON
      ═══════════════════════════════════════════════════════ */
-  finishLesson(wpm, accuracy) {
+  finishLesson(report) {
     if (this.timerInterval) {
       clearInterval(this.timerInterval);
       this.timerInterval = null;
@@ -577,27 +681,41 @@ class TypingApp {
     const input = document.getElementById('typeInput');
     if (input) input.disabled = true;
 
+    /* Save progress */
     this.progress[this.currentLesson.id] = {
-      wpm,
-      accuracy,
-      date: new Date().toISOString()
+      wpm: report.wpm,
+      accuracy: report.accuracy,
+      date: new Date().toISOString(),
+      correct: report.correct,
+      wrong: report.wrong,
+      elapsed: report.elapsedSeconds
     };
     this.saveProgress();
 
+    /* AI record */
+    aiEngine.recordWPM(report.wpm, report.accuracy);
+    statsTracker.addSession(this.currentLesson.id, report);
+
+    /* Celebration */
     if (window.animations?.celebrateLessonComplete) {
-      animations.celebrateLessonComplete(wpm, accuracy);
+      animations.celebrateLessonComplete(report.wpm, report.accuracy);
     } else {
-      this.showToast(`🎉 সম্পন্ন! ${wpm} WPM, ${accuracy}%`);
+      this.showToast(`🎉 ${report.wpm} WPM, ${report.accuracy}% নির্ভুলতা`);
     }
 
+    /* Update UI */
     this.loadDashboard();
     this.renderLessons();
 
     if (typeof clearKeyboardTarget === 'function') clearKeyboardTarget();
+
+    /* Save last lesson */
+    this.settings.lastLesson = this.currentLesson.id;
+    this.saveSettings();
   }
 
   /* ═══════════════════════════════════════════════════════
-     NAVIGATION SHORTCUTS
+     LESSON NAVIGATION
      ═══════════════════════════════════════════════════════ */
   restartLesson() {
     if (this.currentLesson) this.openLesson(this.currentLesson.id);
@@ -605,16 +723,19 @@ class TypingApp {
 
   nextLesson() {
     if (!this.currentLesson) return;
-    const next = LESSONS.find(l => l.id === this.currentLesson.id + 1);
+    const next = getLessonById(this.currentLesson.id + 1);
     if (next) this.openLesson(next.id);
     else this.showToast('🎊 সব লেসন সম্পন্ন!');
   }
 
   dailyChallenge() {
     const day = new Date().getDate();
-    const idx = Math.min(LESSONS.length - 1, 30 + (day % 30));
-    this.openLesson(LESSONS[idx].id);
-    this.showToast('🔥 ডেইলি চ্যালেঞ্জ!');
+    const challengeLessons = LESSONS.filter(l => l.type === 'challenge');
+    if (challengeLessons.length > 0) {
+      const lesson = challengeLessons[day % challengeLessons.length];
+      this.openLesson(lesson.id);
+      this.showToast('🔥 ডেইলি চ্যালেঞ্জ শুরু!');
+    }
   }
 
   nextTip() {
@@ -628,7 +749,9 @@ class TypingApp {
       'আগের লেসন ৯৫%+ নির্ভুলতায় শেষ করুন।',
       'মাঝে মাঝে চোখকে বিশ্রাম দিন।',
       'য়, ড়, ঢ় — এগুলোতে মনোযোগ দিন।',
-      'সপ্তাহে একবার গতি পরীক্ষা করুন।'
+      'সপ্তাহে একবার গতি পরীক্ষা করুন।',
+      'কার-চিহ্ন সঠিকভাবে টাইপ করার অভ্যাস করুন।',
+      'প্রতিটি লেসন ৩ বার অনুশীলন করুন।'
     ];
     const el = document.getElementById('dailyTip');
     if (!el) return;
@@ -640,13 +763,54 @@ class TypingApp {
   }
 
   /* ═══════════════════════════════════════════════════════
+     KEYBOARD LAYOUT SELECTORS
+     ═══════════════════════════════════════════════════════ */
+  initLayoutSelector() {
+    const liveSelect = document.getElementById('kbLayoutSelect');
+    const standaloneSelect = document.getElementById('standaloneLayoutSelect');
+
+    if (liveSelect) {
+      liveSelect.value = this.settings.liveLayout || 'jatiya';
+      liveSelect.addEventListener('change', (e) => this.setKeyboardLayout(e.target.value));
+    }
+
+    if (standaloneSelect) {
+      standaloneSelect.value = this.settings.standaloneLayout || 'jatiya';
+      standaloneSelect.addEventListener('change', (e) => this.setStandaloneLayout(e.target.value));
+    }
+  }
+
+  setKeyboardLayout(layoutId) {
+    this.settings.liveLayout = layoutId;
+    this.saveSettings();
+    if (typeof changeLiveLayout === 'function') changeLiveLayout(layoutId);
+    this.showToast(`⌨️ ${KEYBOARD_LAYOUTS[layoutId].name}`);
+  }
+
+  setStandaloneLayout(layoutId) {
+    this.settings.standaloneLayout = layoutId;
+    this.saveSettings();
+    if (typeof changeStandaloneLayout === 'function') changeStandaloneLayout(layoutId);
+    this.showToast(`⌨️ ${KEYBOARD_LAYOUTS[layoutId].name}`);
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     FOCUS MODE
+     ═══════════════════════════════════════════════════════ */
+  toggleFocus() {
+    this.focusMode = !this.focusMode;
+    document.body.classList.toggle('focus-mode', this.focusMode);
+    this.showToast(this.focusMode ? '🎯 ফোকাস মোড চালু' : 'ফোকাস মোড বন্ধ');
+  }
+
+  /* ═══════════════════════════════════════════════════════
      DASHBOARD
      ═══════════════════════════════════════════════════════ */
   loadDashboard() {
     try {
       const vals = Object.values(this.progress);
       const totalLessons = LESSONS.length;
-      const completedCount = vals.length;
+      const completed = vals.length;
 
       const avgWpm = vals.length
         ? Math.round(vals.reduce((a, b) => a + b.wpm, 0) / vals.length)
@@ -659,7 +823,7 @@ class TypingApp {
       const accEl = document.getElementById('statAccuracy');
       if (accEl) accEl.textContent = avgAcc + '%';
       const compEl = document.getElementById('statCompleted');
-      if (compEl) compEl.textContent = `${completedCount}/${totalLessons}`;
+      if (compEl) compEl.textContent = `${completed}/${totalLessons}`;
       const streakEl = document.getElementById('statStreak');
       if (streakEl) streakEl.textContent = this.streak.days;
 
@@ -667,14 +831,14 @@ class TypingApp {
 
       const bar = document.getElementById('completedProgress');
       if (bar) {
-        const pct = totalLessons > 0 ? (completedCount / totalLessons) * 100 : 0;
+        const pct = totalLessons > 0 ? (completed / totalLessons) * 100 : 0;
         bar.style.width = pct + '%';
       }
 
-      this.renderBadges(completedCount, avgWpm);
+      this.renderBadges(completed, avgWpm);
       this.renderTopLessons(vals);
       this.renderRecentLessons(vals);
-      this.renderChart();
+      this.renderProgressChart();
       setTimeout(() => this.renderWeeklyChart(), 100);
       this.renderDailyTip();
 
@@ -774,12 +938,15 @@ class TypingApp {
       { icon: 'bi-3-circle', name: '২৫টি', earned: count >= 25, tip: '২৫টি লেসন' },
       { icon: 'bi-4-circle', name: '৫০টি', earned: count >= 50, tip: '৫০টি লেসন' },
       { icon: 'bi-trophy', name: '১০০টি', earned: count >= 100, tip: '১০০টি লেসন' },
-      { icon: 'bi-award', name: 'সব', earned: count >= LESSONS.length, tip: 'সব লেসন' },
+      { icon: 'bi-award', name: '২০০টি', earned: count >= 200, tip: '২০০টি লেসন' },
+      { icon: 'bi-crown', name: 'সব', earned: count >= LESSONS.length, tip: 'সব লেসন' },
       { icon: 'bi-lightning', name: '২০ WPM', earned: wpm >= 20, tip: '২০ WPM' },
       { icon: 'bi-fire', name: '৪০ WPM', earned: wpm >= 40, tip: '৪০ WPM' },
       { icon: 'bi-star', name: '৬০ WPM', earned: wpm >= 60, tip: '৬০ WPM' },
       { icon: 'bi-rocket', name: '৮০ WPM', earned: wpm >= 80, tip: '৮০ WPM' },
-      { icon: 'bi-crown', name: '১০০ WPM', earned: wpm >= 100, tip: '১০০ WPM' }
+      { icon: 'bi-trophy-fill', name: '১০০ WPM', earned: wpm >= 100, tip: '১০০ WPM' },
+      { icon: 'bi-gem', name: '১২০ WPM', earned: wpm >= 120, tip: '১২০ WPM' },
+      { icon: 'bi-diamond', name: '১৫০ WPM', earned: wpm >= 150, tip: '১৫০ WPM' }
     ];
 
     const unlocked = badges.filter(b => b.earned).length;
@@ -808,7 +975,7 @@ class TypingApp {
       .slice(0, 5);
 
     container.innerHTML = sorted.map(([id, p], idx) => {
-      const l = LESSONS.find(x => x.id == id);
+      const l = getLessonById(parseInt(id));
       return `
         <div class="top-lesson-row">
           <div class="top-lesson-rank">${idx + 1}</div>
@@ -836,7 +1003,7 @@ class TypingApp {
       .slice(0, 5);
 
     container.innerHTML = recent.map(([id, p]) => {
-      const l = LESSONS.find(x => x.id == id);
+      const l = getLessonById(parseInt(id));
       return `
         <div class="recent-lesson-row" onclick="app.openLesson(${id})">
           <div class="recent-lesson-icon">✓</div>
@@ -873,21 +1040,21 @@ class TypingApp {
   /* ═══════════════════════════════════════════════════════
      CHARTS
      ═══════════════════════════════════════════════════════ */
-  renderChart() {
+  renderProgressChart() {
     const ctx = document.getElementById('progressChart');
     if (!ctx) return;
 
     if (typeof Chart === 'undefined') {
       if (this.chartRetryCount < 20) {
         this.chartRetryCount++;
-        setTimeout(() => this.renderChart(), 300);
+        setTimeout(() => this.renderProgressChart(), 300);
       }
       return;
     }
 
-    if (this.chart) {
-      try { this.chart.destroy(); } catch (e) {}
-      this.chart = null;
+    if (this.progressChart) {
+      try { this.progressChart.destroy(); } catch (e) {}
+      this.progressChart = null;
     }
 
     const ids = Object.keys(this.progress).sort((a, b) => a - b);
@@ -898,7 +1065,7 @@ class TypingApp {
     const labels = ids.length > 0 ? ids.map(id => `L${id}`) : ['শুরু করুন'];
 
     try {
-      this.chart = new Chart(ctx, {
+      this.progressChart = new Chart(ctx, {
         type: 'line',
         data: {
           labels: labels,
@@ -922,9 +1089,7 @@ class TypingApp {
           maintainAspectRatio: false,
           animation: { duration: 700, easing: 'easeOutQuart' },
           plugins: {
-            legend: {
-              labels: { color: textColor, font: { size: 13, weight: '600' } }
-            },
+            legend: { labels: { color: textColor, font: { size: 13, weight: '600' } } },
             tooltip: {
               backgroundColor: 'rgba(99, 102, 241, 0.95)',
               titleColor: '#fff',
@@ -953,18 +1118,7 @@ class TypingApp {
       this.weeklyChart = null;
     }
 
-    const days = ['শনি', 'রবি', 'সোম', 'মঙ্গল', 'বুধ', 'বৃহঃ', 'শুক্র'];
-    const counts = [0, 0, 0, 0, 0, 0, 0];
-    const now = Date.now();
-
-    Object.values(this.progress).forEach(p => {
-      const daysAgo = Math.floor((now - new Date(p.date).getTime()) / 86400000);
-      if (daysAgo >= 0 && daysAgo < 7) {
-        const idx = 6 - daysAgo;
-        if (idx >= 0 && idx < 7) counts[idx]++;
-      }
-    });
-
+    const activity = statsTracker.getWeeklyActivity();
     const textColor = getComputedStyle(document.body).color;
     const gridColor = 'rgba(148, 163, 184, 0.15)';
 
@@ -972,10 +1126,10 @@ class TypingApp {
       this.weeklyChart = new Chart(ctx, {
         type: 'bar',
         data: {
-          labels: days,
+          labels: activity.labels,
           datasets: [{
             label: 'লেসন',
-            data: counts,
+            data: activity.data,
             backgroundColor: 'rgba(6, 182, 212, 0.7)',
             borderColor: '#06b6d4',
             borderWidth: 2,
@@ -988,18 +1142,11 @@ class TypingApp {
           animation: { duration: 800 },
           plugins: {
             legend: { display: false },
-            tooltip: {
-              backgroundColor: 'rgba(6, 182, 212, 0.95)',
-              displayColors: false
-            }
+            tooltip: { backgroundColor: 'rgba(6, 182, 212, 0.95)', displayColors: false }
           },
           scales: {
             x: { ticks: { color: textColor, font: { size: 11 } }, grid: { display: false } },
-            y: {
-              beginAtZero: true,
-              ticks: { color: textColor, stepSize: 1, font: { size: 11 } },
-              grid: { color: gridColor }
-            }
+            y: { beginAtZero: true, ticks: { color: textColor, stepSize: 1, font: { size: 11 } }, grid: { color: gridColor } }
           }
         }
       });
@@ -1014,7 +1161,7 @@ class TypingApp {
       const rows = Object.entries(this.progress)
         .sort(([a], [b]) => b - a)
         .map(([id, p]) => {
-          const l = LESSONS.find(x => x.id == id);
+          const l = getLessonById(parseInt(id));
           return `<tr>
             <td>${l ? l.title : id}</td>
             <td><strong>${p.wpm}</strong></td>
@@ -1071,9 +1218,7 @@ class TypingApp {
           maintainAspectRatio: false,
           animation: { duration: 700 },
           plugins: {
-            legend: {
-              labels: { color: textColor, font: { size: 13, weight: '600' } }
-            }
+            legend: { labels: { color: textColor, font: { size: 13, weight: '600' } } }
           },
           scales: {
             x: { ticks: { color: textColor, font: { size: 11 } }, grid: { color: gridColor } },
@@ -1093,9 +1238,8 @@ class TypingApp {
     if (this.examInterval) clearInterval(this.examInterval);
     this.examActive = false;
 
-    const lesson1 = LESSONS[105] || LESSONS[0];
-    const lesson2 = LESSONS[106] || LESSONS[1];
-    const text = lesson1.text + ' ' + lesson2.text;
+    const challengeLessons = LESSONS.filter(l => l.group === 'bakyo');
+    const text = challengeLessons.slice(0, 2).map(l => l.text).join(' ');
     this.examText = text;
 
     const area = document.getElementById('examArea');
@@ -1106,7 +1250,7 @@ class TypingApp {
         <i class="bi bi-clock-history"></i>
         <div>${seconds / 60} মিনিটের পরীক্ষা — নিচের লেখাটি টাইপ করুন!</div>
       </div>
-      <div class="text-display mb-3" id="examDisplay">${[...text].map(ch => `<span class="char">${ch === ' ' ? '&nbsp;' : ch}</span>`).join('')}</div>
+      <div class="text-display mb-3" id="examDisplay"></div>
       <textarea id="examInput" class="form-control type-input mb-3" rows="4" placeholder="এখানে টাইপ শুরু করুন..."></textarea>
       <div class="d-flex flex-wrap gap-3 align-items-center">
         <span class="chip c3"><i class="bi bi-clock"></i> <span id="examTimer">${seconds}</span>s</span>
@@ -1124,25 +1268,28 @@ class TypingApp {
     this.examActive = true;
     this.examStartTime = start;
 
+    /* Render initial */
+    const disp = document.getElementById('examDisplay');
+    const targetG = graphemeEngine.split(text);
+    if (disp) {
+      disp.innerHTML = targetG.map(g => `<span class="char">${g === ' ' ? '&nbsp;' : g}</span>`).join('');
+    }
+
     const updateStats = () => {
       const val = inp.value;
-      const targetChars = Array.from(text);
-      const typedChars = Array.from(val);
-      let correct = 0;
-      for (let i = 0; i < typedChars.length; i++) {
-        if (typedChars[i] === targetChars[i]) correct++;
-      }
+      const cmp = graphemeEngine.compare(text, val);
       const min = (Date.now() - start) / 60000;
-      const wpm = min > 0 ? Math.round((correct / 5) / min) : 0;
-      const acc = typedChars.length > 0 ? Math.round((correct / typedChars.length) * 100) : 100;
+      const wpm = min > 0 ? Math.round((cmp.correct / 5) / min) : 0;
+      const acc = cmp.typedCount > 0 ? Math.round((cmp.correct / cmp.typedCount) * 100) : 100;
 
-      const disp = document.getElementById('examDisplay');
       if (disp) {
-        disp.innerHTML = targetChars.map((ch, i) => {
+        disp.innerHTML = cmp.perChar.map(c => {
           let cls = 'char';
-          if (i < typedChars.length) cls += typedChars[i] === ch ? ' correct' : ' wrong';
-          else if (i === typedChars.length) cls += ' current';
-          return `<span class="${cls}">${ch === ' ' ? '&nbsp;' : ch}</span>`;
+          if (c.status === 'correct') cls += ' correct';
+          else if (c.status === 'wrong') cls += ' wrong';
+          else if (c.status === 'pending' && c.index === cmp.typedCount) cls += ' current';
+          const display = c.target === ' ' ? '&nbsp;' : c.target;
+          return `<span class="${cls}">${display}</span>`;
         }).join('');
       }
 
@@ -1151,7 +1298,7 @@ class TypingApp {
       const accEl = document.getElementById('examAcc');
       if (accEl) accEl.textContent = acc;
 
-      return { correct, wpm, acc, typedLen: typedChars.length, targetLen: targetChars.length };
+      return { wpm, acc, typedLen: cmp.typedCount, targetLen: cmp.total };
     };
 
     inp.addEventListener('input', () => {
@@ -1186,12 +1333,14 @@ class TypingApp {
 
     const result = document.getElementById('examResult');
     if (result) {
+      const rating = TypingUtils.getRating(wpm, acc);
       result.innerHTML = `
         <div class="alert alert-success d-flex align-items-center gap-3">
           <i class="bi bi-trophy-fill" style="font-size:2rem;"></i>
           <div>
-            <strong style="font-size:1.3rem;">ফলাফল</strong><br>
+            <strong style="font-size:1.3rem;">ফলাফল: Grade ${rating.grade}</strong><br>
             <span>⚡ ${wpm} WPM</span> • <span>🎯 ${acc}% নির্ভুলতা</span>
+            <div class="small mt-1">${TypingUtils.getMotivation(wpm, acc)}</div>
           </div>
         </div>
       `;
@@ -1216,16 +1365,18 @@ class TypingApp {
     });
   }
 
-  startGame() {
+  startGame(mode = 'normal') {
     if (this.gameActive) this.stopGame();
 
     this.gameActive = true;
+    this.gameMode = mode;
     this.gameScore = 0;
     this.gameLives = 3;
-    this.gameFallingWords = [];
+    this.gameCombo = 0;
 
     this.updateStatDisplay('gameScore', '0');
     this.updateStatDisplay('gameLives', '3');
+    this.updateStatDisplay('gameCombo', '0');
 
     const area = document.getElementById('gameArea');
     if (!area) return;
@@ -1238,16 +1389,19 @@ class TypingApp {
       inp.focus();
     }
 
+    const speed = { normal: 1600, hard: 1100, insane: 700 }[mode] || 1600;
+    const duration = { normal: 8000, hard: 6000, insane: 4500 }[mode] || 8000;
+
     this.gameInterval = setInterval(() => {
       if (!this.gameActive) return;
-      this.spawnGameWord();
-    }, 1600);
+      this.spawnGameWord(duration);
+    }, speed);
 
-    this.spawnGameWord();
-    this.showToast('🎮 গেম শুরু! শব্দ টাইপ করে Enter চাপুন');
+    this.spawnGameWord(duration);
+    this.showToast(`🎮 গেম শুরু! মোড: ${mode}`);
   }
 
-  spawnGameWord() {
+  spawnGameWord(duration = 8000) {
     const area = document.getElementById('gameArea');
     if (!area) return;
 
@@ -1264,7 +1418,6 @@ class TypingApp {
     area.appendChild(el);
 
     const start = Date.now();
-    const duration = 8000;
 
     const animInt = setInterval(() => {
       if (!this.gameActive || !el.isConnected) {
@@ -1276,7 +1429,9 @@ class TypingApp {
         clearInterval(animInt);
         el.remove();
         this.gameLives--;
+        this.gameCombo = 0;
         this.updateStatDisplay('gameLives', this.gameLives);
+        this.updateStatDisplay('gameCombo', this.gameCombo);
         if (window.animations?.sound) animations.sound.miss();
         if (this.gameLives <= 0) this.stopGame();
       } else {
@@ -1301,8 +1456,12 @@ class TypingApp {
       target.classList.add('hit');
       setTimeout(() => target.remove(), 300);
 
-      this.gameScore += 10;
+      this.gameCombo++;
+      const bonus = Math.floor(this.gameCombo / 5) * 5;
+      this.gameScore += 10 + bonus;
+
       this.updateStatDisplay('gameScore', this.gameScore);
+      this.updateStatDisplay('gameCombo', this.gameCombo);
 
       if (window.animations) {
         animations.sound.hit();
@@ -1310,10 +1469,12 @@ class TypingApp {
           count: 10, speed: 4, size: 4, life: 600,
           colors: ['#10b981', '#f59e0b', '#ec4899']
         });
-        animations.floatText('+10', rect.left + rect.width / 2, rect.top, '#10b981', 20);
+        animations.floatText(`+${10 + bonus}`, rect.left + rect.width / 2, rect.top, '#10b981', 20);
       }
     } else {
       if (window.animations?.sound) animations.sound.wrong();
+      this.gameCombo = 0;
+      this.updateStatDisplay('gameCombo', 0);
     }
   }
 
@@ -1334,6 +1495,63 @@ class TypingApp {
   }
 
   /* ═══════════════════════════════════════════════════════
+     CERTIFICATE
+     ═══════════════════════════════════════════════════════ */
+  showCertificate() {
+    if (!this.currentLesson) {
+      this.showToast('❌ প্রথমে একটি লেসন সম্পন্ন করুন');
+      return;
+    }
+
+    const progress = this.progress[this.currentLesson.id];
+    if (!progress) {
+      this.showToast('❌ এই লেসন এখনো সম্পন্ন হয়নি');
+      return;
+    }
+
+    const html = CertificateGenerator.generate(
+      this.currentLesson.id,
+      progress.wpm,
+      progress.accuracy,
+      progress.date
+    );
+
+    const certContent = document.getElementById('certContent');
+    if (certContent) {
+      certContent.innerHTML = html + `
+        <div class="text-center mt-3">
+          <button class="btn btn-ultra" onclick="app.downloadCertificate()">
+            <i class="bi bi-download"></i> ডাউনলোড
+          </button>
+          <button class="btn btn-outline-secondary ms-2" data-bs-dismiss="modal">
+            বন্ধ করুন
+          </button>
+        </div>
+      `;
+    }
+
+    const modalEl = document.getElementById('certModal');
+    if (modalEl && typeof bootstrap !== 'undefined') {
+      new bootstrap.Modal(modalEl).show();
+    }
+  }
+
+  downloadCertificate() {
+    if (!this.currentLesson) return;
+    const progress = this.progress[this.currentLesson.id];
+    if (!progress) return;
+
+    CertificateGenerator.download(
+      this.currentLesson.id,
+      progress.wpm,
+      progress.accuracy,
+      progress.date
+    );
+
+    this.showToast('📥 সার্টিফিকেট ডাউনলোড হচ্ছে...');
+  }
+
+  /* ═══════════════════════════════════════════════════════
      EXPORT / RESET
      ═══════════════════════════════════════════════════════ */
   exportProgress() {
@@ -1341,12 +1559,13 @@ class TypingApp {
       progress: this.progress,
       streak: this.streak,
       settings: this.settings,
-      exported: new Date().toISOString()
+      exported: new Date().toISOString(),
+      version: 'ATOMIC-2.0'
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `bangla-typing-${Date.now()}.json`;
+    a.download = `bangla-typing-atomic-${Date.now()}.json`;
     a.click();
     URL.revokeObjectURL(a.href);
     this.showToast('📥 প্রোগ্রেস ডাউনলোড হয়েছে');
@@ -1355,8 +1574,8 @@ class TypingApp {
   resetProgress() {
     if (!confirm('সব প্রোগ্রেস মুছে ফেলবেন? এটি ফেরানো যাবে না!')) return;
 
-    localStorage.removeItem('bnTypingProgress');
-    localStorage.removeItem('bnTypingStreak');
+    localStorage.removeItem('bnAtomicProgress');
+    localStorage.removeItem('bnAtomicStreak');
     this.progress = {};
     this.streak = { days: 0, last: null };
 
@@ -1381,46 +1600,42 @@ class TypingApp {
   }
 }
 
-
 /* ═══════════════════════════════════════════════════════════════
-   INIT
+   BOOT
    ═══════════════════════════════════════════════════════════════ */
-
-function bootTypingApp() {
+function bootApp() {
   if (window.app) return;
   window.app = new TypingApp();
 
-  console.log('%c🚀 বাংলা টাইপিং একাডেমি — READY', 'color:#10b981;font-size:18px;font-weight:900;text-shadow:0 0 10px #10b981;');
-  console.log('%c⚡ বিজয় কীবোর্ড • Unicode • ১১৫ লেসন', 'color:#8b5cf6;font-size:13px;');
-  console.log('%c💡 কনসোল টেস্ট: app, animations, liveKeyboard, debugKeyboard', 'color:#f59e0b;font-size:12px;');
+  console.log('%c⚛️ বাংলা টাইপিং একাডেমি — ATOMIC ULTIMATE READY', 'color:#10b981;font-size:18px;font-weight:900;text-shadow:0 0 10px #10b981;');
+  console.log(`%c⚡ ${LESSONS.length} লেসন • ${Object.keys(KEYBOARD_LAYOUTS).length} কীবোর্ড • Grapheme Engine`, 'color:#8b5cf6;font-size:13px;');
+  console.log('%c💡 Console: app, animations, engine, liveKeyboard, debugKeyboard', 'color:#f59e0b;font-size:12px;');
 }
 
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', bootTypingApp);
+  document.addEventListener('DOMContentLoaded', bootApp);
 } else {
-  bootTypingApp();
+  bootApp();
 }
-
 
 /* ═══════════════════════════════════════════════════════════════
    GLOBAL ERROR HANDLER
    ═══════════════════════════════════════════════════════════════ */
-
 window.addEventListener('error', (e) => {
   console.error('⚠️ Global Error:', e.message, 'at', e.filename + ':' + e.lineno);
 });
 
-
 /* ═══════════════════════════════════════════════════════════════
    STARTUP DIAGNOSTICS
    ═══════════════════════════════════════════════════════════════ */
-
 setTimeout(() => {
   const checks = {
     '✓ Bootstrap': typeof bootstrap !== 'undefined',
     '✓ Chart.js': typeof Chart !== 'undefined',
+    '✓ AOS': typeof AOS !== 'undefined',
     '✓ LESSONS': typeof LESSONS !== 'undefined' && LESSONS.length > 0,
-    '✓ BIJOY_LAYOUT': typeof BIJOY_LAYOUT !== 'undefined',
+    '✓ KEYBOARD_LAYOUTS': typeof KEYBOARD_LAYOUTS !== 'undefined',
+    '✓ Grapheme Engine': typeof graphemeEngine !== 'undefined',
     '✓ App': typeof app !== 'undefined',
     '✓ Animations': typeof animations !== 'undefined',
     '✓ Live Keyboard': !!window.liveKeyboard,
@@ -1434,9 +1649,24 @@ setTimeout(() => {
     '✓ recentLessons': !!document.getElementById('recentLessons')
   };
 
-  console.group('%c🔍 Startup Diagnostics', 'color:#f59e0b;font-weight:bold;font-size:14px;');
+  console.group('%c🔍 Atomic Startup Diagnostics', 'color:#f59e0b;font-weight:bold;font-size:14px;');
+  let allOK = true;
   Object.entries(checks).forEach(([k, v]) => {
     console.log(v ? `%c${k} OK` : `%c${k} FAILED`, v ? 'color:#10b981;' : 'color:#ef4444;font-weight:bold;');
+    if (!v) allOK = false;
   });
+  console.log(allOK
+    ? '%c💯 সব ঠিকঠাক! ১০০% কাজ করবে।'
+    : '%c⚠️ কিছু সমস্যা আছে — উপরে লাল দেখুন',
+    allOK ? 'color:#10b981;font-weight:bold;font-size:13px;' : 'color:#ef4444;font-weight:bold;font-size:13px;'
+  );
+  console.groupEnd();
+
+  /* Grapheme test */
+  console.group('%c🧠 Grapheme Engine Test', 'color:#8b5cf6;font-weight:bold;');
+  console.log('ক্ষ →', graphemeEngine.split('ক্ষ'));
+  console.log('ত্রি →', graphemeEngine.split('ত্রি'));
+  console.log('বাংলা →', graphemeEngine.split('বাংলা'));
+  console.log('কর্ম →', graphemeEngine.split('কর্ম'));
   console.groupEnd();
 }, 1500);
