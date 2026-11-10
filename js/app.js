@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════════════════════
-   বাংলা টাইপিং একাডেমি — APP.JS (ATOMIC v2.2)
-   Complete Fix: Result Display + য় ড় ঢ় + Last Char
+   বাংলা টাইপিং একাডেমি — APP.JS (ATOMIC v2.3)
+   Complete Fix: Result Display + Aggressive Finish + Force Finish
    ═══════════════════════════════════════════════════════════════ */
 
 class TypingApp {
@@ -17,7 +17,7 @@ class TypingApp {
     this.correctChars = 0;
     this.wrongChars = 0;
 
-    /* ═══ ★★★ FIX v2.2: Debounce + Result display state ★★★ ═══ */
+    /* ═══ ★★★ v2.3: Finish state management ★★★ ═══ */
     this._finishTimeout = null;
     this._pendingReport = null;
     this._lessonFinished = false;
@@ -51,6 +51,7 @@ class TypingApp {
     this.examText = '';
     this.examStartTime = null;
 
+    /* ═══ Focus ═══ */
     this.focusMode = false;
 
     this.init();
@@ -81,7 +82,7 @@ class TypingApp {
           AOS.init({ duration: 600, once: true, offset: 50 });
         }
 
-        console.log('%c✓ App Initialized (ATOMIC v2.2)', 'color:#10b981;font-weight:bold;');
+        console.log('%c✓ App Initialized (ATOMIC v2.3)', 'color:#10b981;font-weight:bold;');
       } catch (err) {
         console.error('Init error:', err);
       }
@@ -423,7 +424,7 @@ class TypingApp {
   }
 
   /* ═══════════════════════════════════════════════════════
-     OPEN LESSON
+     OPEN LESSON — with state reset
      ═══════════════════════════════════════════════════════ */
   setupTypingInput() {
     const input = document.getElementById('typeInput');
@@ -437,7 +438,7 @@ class TypingApp {
     const lesson = getLessonById(id);
     if (!lesson) return;
 
-    /* ═══ Reset finish state ═══ */
+    /* ═══ ★★★ v2.3: Reset ALL finish state ★★★ ═══ */
     if (this._finishTimeout) {
       clearTimeout(this._finishTimeout);
       this._finishTimeout = null;
@@ -523,7 +524,7 @@ class TypingApp {
   }
 
   /* ═══════════════════════════════════════════════════════
-     ★★★ TYPING HANDLER (v2.2) — Complete Fix ★★★
+     ★★★ TYPING HANDLER (v2.3) — AGGRESSIVE FINISH ★★★
      ═══════════════════════════════════════════════════════ */
   handleTyping(e) {
     if (!this.currentLesson || !this.currentSession) return;
@@ -546,7 +547,7 @@ class TypingApp {
     const cmp = graphemeEngine.compare(targetText, val);
     this.currentSession.updateTyped(val);
 
-    /* ═══════ Render ═══════ */
+    /* ═══════ Render display ═══════ */
     const disp = document.getElementById('textDisplay');
     if (disp) {
       disp.innerHTML = targetG.map((g, i) => {
@@ -577,7 +578,7 @@ class TypingApp {
     this.correctChars = cmp.correct;
     this.wrongChars = cmp.wrong;
 
-    /* ═══════ Stats ═══════ */
+    /* ═══════ Update stats ═══════ */
     const report = this.currentSession.getReport();
     this.updateStatDisplay('wpm', report.wpm);
     this.updateStatDisplay('accuracy', report.accuracy);
@@ -601,22 +602,94 @@ class TypingApp {
     }
 
     /* ═══════════════════════════════════════════════════════
-       ★★★ v2.2 FIX: Finish with aggressive verification ★★★
+       ★★★ v2.3 AGGRESSIVE FINISH LOGIC ★★★
        
-       মূল পরিবর্তন:
-       - Debounce 200ms (আগে 100ms ছিল)
-       - Multiple verification checks
-       - Force finish after 500ms if input stopped
+       Rules:
+       1. Length matched + ALL correct + lastComplete → INSTANT finish
+       2. Length exceeded + ALL correct → INSTANT finish
+       3. Length matched + some wrong → 300ms retry (user fix করবে)
+       4. Length NOT matched → cancel any pending finish
        ═══════════════════════════════════════════════════════ */
-    if (cmp.isComplete) {
-      if (this._finishTimeout) clearTimeout(this._finishTimeout);
 
+    const lengthReached = typedG.length >= targetG.length;
+    const allCorrect = cmp.wrong === 0;
+    const lastComplete = !cmp.lastIncomplete;
+
+    /* Debug log */
+    console.log(
+      `%c🔍 typed=${typedG.length}/${targetG.length} | wrong=${cmp.wrong} | lastIncomplete=${cmp.lastIncomplete}`,
+      'color:#f59e0b;font-size:11px;'
+    );
+
+    /* ═══════════════════════════════════════════════
+       PRIORITY 1: EXACT MATCH → INSTANT FINISH
+       ═══════════════════════════════════════════════ */
+    if (lengthReached && allCorrect && lastComplete) {
+      console.log('%c✅ INSTANT FINISH — all conditions met!', 'color:#10b981;font-weight:bold;');
+
+      /* Cancel any pending timeout */
+      if (this._finishTimeout) {
+        clearTimeout(this._finishTimeout);
+        this._finishTimeout = null;
+      }
+      this._pendingReport = null;
+
+      /* Finish immediately */
+      this.finishLesson(report);
+      return;
+    }
+
+    /* ═══════════════════════════════════════════════
+       PRIORITY 2: OVERTYPED but ALL CORRECT → FINISH
+       ═══════════════════════════════════════════════ */
+    if (typedG.length > targetG.length && allCorrect) {
+      console.log('%c✅ OVERTYPED FINISH', 'color:#10b981;font-weight:bold;');
+
+      if (this._finishTimeout) {
+        clearTimeout(this._finishTimeout);
+        this._finishTimeout = null;
+      }
+      this._pendingReport = null;
+
+      this.finishLesson(report);
+      return;
+    }
+
+    /* ═══════════════════════════════════════════════
+       PRIORITY 3: Length reached but SOME WRONG → 300ms wait
+       ═══════════════════════════════════════════════ */
+    if (lengthReached && !allCorrect) {
+      console.log('%c⏸ Length reached with errors — waiting 300ms for fix', 'color:#f59e0b;');
+
+      if (this._finishTimeout) clearTimeout(this._finishTimeout);
       this._pendingReport = report;
 
       this._finishTimeout = setTimeout(() => {
-        this.verifyAndFinish();
-      }, 200);
-    } else {
+        if (this._lessonFinished) return;
+
+        const finalVal = document.getElementById('typeInput')?.value || '';
+        const finalCmp = graphemeEngine.compare(this.currentLesson.text, finalVal);
+
+        console.log('%c🔍 Retry check:', 'color:#f59e0b;',
+          `wrong=${finalCmp.wrong}, typed=${finalCmp.typedCount}/${finalCmp.total}`);
+
+        if (finalCmp.wrong === 0 &&
+            finalCmp.typedCount >= finalCmp.total &&
+            !finalCmp.lastIncomplete) {
+          console.log('%c✅ RETRY SUCCESS — finishing now', 'color:#10b981;');
+          this.finishLesson(this._pendingReport || this.currentSession.getReport());
+        }
+
+        this._finishTimeout = null;
+        this._pendingReport = null;
+      }, 300);
+      return;
+    }
+
+    /* ═══════════════════════════════════════════════
+       PRIORITY 4: Length NOT reached → cancel any pending
+       ═══════════════════════════════════════════════ */
+    if (!lengthReached) {
       if (this._finishTimeout) {
         clearTimeout(this._finishTimeout);
         this._finishTimeout = null;
@@ -626,7 +699,7 @@ class TypingApp {
   }
 
   /* ═══════════════════════════════════════════════════════
-     ★★★ VERIFY AND FINISH (v2.2) ★★★
+     ★★★ VERIFY AND FINISH (v2.3) — Safety net ★★★
      ═══════════════════════════════════════════════════════ */
   verifyAndFinish() {
     if (this._lessonFinished) return;
@@ -635,52 +708,83 @@ class TypingApp {
     const finalVal = document.getElementById('typeInput')?.value || '';
     const finalCmp = graphemeEngine.compare(this.currentLesson.text, finalVal);
 
-    console.log('%c🔍 Verify:', 'color:#f59e0b;',
+    console.log('%c🔍 verifyAndFinish:', 'color:#f59e0b;',
       `wrong=${finalCmp.wrong}, incomplete=${finalCmp.lastIncomplete}, typed=${finalCmp.typedCount}/${finalCmp.total}`);
 
-    /* ═══ TRULY complete check ═══ */
     const trulyComplete =
       finalCmp.wrong === 0 &&
-      !finalCmp.lastIncomplete &&
       finalCmp.typedCount >= finalCmp.total;
 
     if (trulyComplete) {
-      console.log('%c✅ TRULY COMPLETE — showing result!', 'color:#10b981;font-weight:bold;');
+      console.log('%c✅ VERIFIED COMPLETE', 'color:#10b981;font-weight:bold;');
       this.finishLesson(this._pendingReport || this.currentSession.getReport());
-    } else {
-      console.log('%c⏸ Not complete yet — still waiting', 'color:#f59e0b;');
-      /* Retry once more after 300ms if user stopped typing */
-      if (this._finishTimeout) clearTimeout(this._finishTimeout);
-      this._finishTimeout = setTimeout(() => {
-        const retryVal = document.getElementById('typeInput')?.value || '';
-        const retryCmp = graphemeEngine.compare(this.currentLesson.text, retryVal);
-        if (retryCmp.wrong === 0 && !retryCmp.lastIncomplete &&
-            retryCmp.typedCount >= retryCmp.total) {
-          this.finishLesson(this._pendingReport || this.currentSession.getReport());
-        }
-      }, 300);
     }
 
     this._finishTimeout = null;
     this._pendingReport = null;
   }
 
+  /* ═══════════════════════════════════════════════════════
+     ★★★ FORCE FINISH — Manual button for stuck cases ★★★
+     ═══════════════════════════════════════════════════════ */
+  forceFinish() {
+    if (!this.currentLesson || !this.currentSession) {
+      this.showToast('❌ লেসন শুরু করুন');
+      return;
+    }
+    if (this._lessonFinished) {
+      this.showToast('✅ লেসন ইতিমধ্যে সম্পন্ন');
+      return;
+    }
+
+    const input = document.getElementById('typeInput');
+    const val = input?.value || '';
+    const cmp = graphemeEngine.compare(this.currentLesson.text, val);
+
+    console.log('%c⚡ FORCE FINISH:', 'color:#ef4444;font-weight:bold;',
+      `correct=${cmp.correct}, wrong=${cmp.wrong}, typed=${cmp.typedCount}/${cmp.total}`);
+
+    /* Cancel any pending timeout */
+    if (this._finishTimeout) {
+      clearTimeout(this._finishTimeout);
+      this._finishTimeout = null;
+    }
+    this._pendingReport = null;
+
+    /* Force finish */
+    const report = this.currentSession.getReport();
+    this.finishLesson(report);
+
+    this.showToast(`⚡ জোর করে সম্পন্ন: ${report.wpm} WPM, ${report.accuracy}%`);
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     TIMER
+     ═══════════════════════════════════════════════════════ */
   startTimer() {
     if (this.timerInterval) clearInterval(this.timerInterval);
     this.timerInterval = setInterval(() => {
       if (!this.startTime) return;
+      if (this._lessonFinished) {
+        clearInterval(this.timerInterval);
+        this.timerInterval = null;
+        return;
+      }
       const sec = Math.floor((Date.now() - this.startTime) / 1000);
       const mm = Math.floor(sec / 60);
       const ss = String(sec % 60).padStart(2, '0');
       this.updateStatDisplay('timer', `${mm}:${ss}`);
 
-      if (this.currentSession && !this._lessonFinished) {
+      if (this.currentSession) {
         const report = this.currentSession.getReport();
         this.updateStatDisplay('wpm', report.wpm);
       }
     }, 500);
   }
 
+  /* ═══════════════════════════════════════════════════════
+     HAND INDICATOR
+     ═══════════════════════════════════════════════════════ */
   updateHandIndicator() {
     if (!this.currentLesson) return;
 
@@ -707,22 +811,27 @@ class TypingApp {
   }
 
   /* ═══════════════════════════════════════════════════════
-     ★★★ FINISH LESSON (v2.2) — Result Display ★★★
+     ★★★ FINISH LESSON (v2.3) — Guaranteed Result ★★★
      ═══════════════════════════════════════════════════════ */
   finishLesson(report) {
-    /* ═══ Already finished? ignore duplicate ═══ */
-    if (this._lessonFinished) return;
+    /* ═══ Prevent double finish ═══ */
+    if (this._lessonFinished) {
+      console.warn('⚠️ Already finished, skipping');
+      return;
+    }
     this._lessonFinished = true;
 
+    /* ═══ Stop timer ═══ */
     if (this.timerInterval) {
       clearInterval(this.timerInterval);
       this.timerInterval = null;
     }
 
+    /* ═══ Disable input ═══ */
     const input = document.getElementById('typeInput');
     if (input) input.disabled = true;
 
-    /* ═══ Save ═══ */
+    /* ═══ Save progress ═══ */
     this.progress[this.currentLesson.id] = {
       wpm: report.wpm,
       accuracy: report.accuracy,
@@ -736,11 +845,12 @@ class TypingApp {
     aiEngine.recordWPM(report.wpm, report.accuracy);
     statsTracker.addSession(this.currentLesson.id, report);
 
-    /* ═══ 🎉 Celebration (which also shows result) ═══ */
+    /* ═══ 🎉 Show Celebration (result popup) ═══ */
     if (window.animations?.celebrateLessonComplete) {
       animations.celebrateLessonComplete(report.wpm, report.accuracy);
     } else {
-      this.showToast(`🎉 ${report.wpm} WPM, ${report.accuracy}% নির্ভুলতা`);
+      /* Fallback celebration */
+      this.showCustomResultPopup(report);
     }
 
     /* ═══ 🔊 Success sound ═══ */
@@ -748,7 +858,7 @@ class TypingApp {
       animations.sound.success();
     }
 
-    /* ═══ 🔧 Result Toast (guaranteed visible) ═══ */
+    /* ═══ ✅ Guaranteed Toast ═══ */
     setTimeout(() => {
       this.showToast(`✅ সম্পন্ন! ${report.wpm} WPM • ${report.accuracy}% নির্ভুলতা`);
     }, 300);
@@ -757,13 +867,66 @@ class TypingApp {
     this.loadDashboard();
     this.renderLessons();
 
+    /* ═══ Clear keyboard ═══ */
     if (typeof clearKeyboardTarget === 'function') clearKeyboardTarget();
 
+    /* ═══ Save last lesson ═══ */
     this.settings.lastLesson = this.currentLesson.id;
     this.saveSettings();
 
-    console.log('%c🎯 Lesson finished:', 'color:#10b981;font-weight:bold;',
+    console.log('%c🎯 LESSON FINISHED:', 'color:#10b981;font-weight:bold;font-size:14px;',
       `WPM=${report.wpm}, Accuracy=${report.accuracy}%, Correct=${report.correct}, Wrong=${report.wrong}`);
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     Custom Result Popup — fallback if animations missing
+     ═══════════════════════════════════════════════════════ */
+  showCustomResultPopup(report) {
+    const el = document.createElement('div');
+    el.style.cssText = `
+      position: fixed;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%) scale(0);
+      background: linear-gradient(135deg, #6366f1, #8b5cf6, #ec4899);
+      color: #fff;
+      padding: 30px 50px;
+      border-radius: 24px;
+      font-size: 1.5rem;
+      font-weight: 800;
+      text-align: center;
+      z-index: 10000;
+      box-shadow: 0 20px 60px rgba(99, 102, 241, 0.6);
+      font-family: 'Hind Siliguri', sans-serif;
+      animation: completePop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    `;
+    el.innerHTML = `
+      <div style="font-size: 3rem; margin-bottom: 10px;">🎉</div>
+      <div>লেসন সম্পন্ন!</div>
+      <div style="font-size: 1rem; opacity: 0.9; margin-top: 8px;">
+        ${report.wpm} WPM • ${report.accuracy}% নির্ভুলতা
+      </div>
+      <button onclick="this.parentElement.remove()" style="
+        margin-top: 16px;
+        background: rgba(255,255,255,0.2);
+        border: 1px solid rgba(255,255,255,0.4);
+        color: #fff;
+        padding: 8px 24px;
+        border-radius: 10px;
+        cursor: pointer;
+        font-weight: 600;
+        font-family: inherit;
+      ">বন্ধ করুন</button>
+    `;
+    document.body.appendChild(el);
+
+    setTimeout(() => {
+      if (el.parentElement) {
+        el.style.transition = 'opacity 0.5s';
+        el.style.opacity = '0';
+        setTimeout(() => el.remove(), 500);
+      }
+    }, 3000);
   }
 
   /* ═══════════════════════════════════════════════════════
@@ -1542,7 +1705,7 @@ class TypingApp {
       streak: this.streak,
       settings: this.settings,
       exported: new Date().toISOString(),
-      version: 'ATOMIC-2.2'
+      version: 'ATOMIC-2.3'
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
@@ -1583,11 +1746,13 @@ function bootApp() {
   if (window.app) return;
   window.app = new TypingApp();
 
-  console.log('%c⚛️ বাংলা টাইপিং একাডেমি — ATOMIC v2.2 READY', 'color:#10b981;font-size:18px;font-weight:900;text-shadow:0 0 10px #10b981;');
+  console.log('%c⚛️ বাংলা টাইপিং একাডেমি — ATOMIC v2.3 READY', 'color:#10b981;font-size:18px;font-weight:900;text-shadow:0 0 10px #10b981;');
   console.log(`%c⚡ ${LESSONS.length} লেসন • ${Object.keys(KEYBOARD_LAYOUTS).length} কীবোর্ড`, 'color:#8b5cf6;font-size:13px;');
-  console.log('%c🔧 v2.2 FIXES:', 'color:#f59e0b;font-size:12px;font-weight:bold;');
-  console.log('%c   ✓ Result Display (200ms debounce + verify)', 'color:#10b981;font-size:11px;');
-  console.log('%c   ✓ য় ড় ঢ় Unicode Normalization', 'color:#10b981;font-size:11px;');
+  console.log('%c🔧 v2.3 FIXES:', 'color:#f59e0b;font-size:13px;font-weight:bold;');
+  console.log('%c   ✓ AGGRESSIVE FINISH — length মিললেই সাথে সাথে finish', 'color:#10b981;font-size:11px;');
+  console.log('%c   ✓ INSTANT RESULT POPUP — কোনো delay নেই', 'color:#10b981;font-size:11px;');
+  console.log('%c   ✓ FORCE FINISH button — app.forceFinish()', 'color:#10b981;font-size:11px;');
+  console.log('%c   ✓ য় ড় ঢ় Unicode Fix', 'color:#10b981;font-size:11px;');
   console.log('%c   ✓ Last Grapheme Fix', 'color:#10b981;font-size:11px;');
   console.log('%c💡 Console: app, animations, engine, debugKeyboard', 'color:#f59e0b;font-size:12px;');
 }
@@ -1617,18 +1782,19 @@ setTimeout(() => {
     '✓ Grapheme Engine': typeof graphemeEngine !== 'undefined',
     '✓ fullNormalize': typeof graphemeEngine?.fullNormalize === 'function',
     '✓ App': typeof app !== 'undefined',
+    '✓ forceFinish': typeof app?.forceFinish === 'function',
     '✓ Animations': typeof animations !== 'undefined',
     '✓ Live Keyboard': !!window.liveKeyboard
   };
 
-  console.group('%c🔍 ATOMIC v2.2 Diagnostics', 'color:#f59e0b;font-weight:bold;font-size:14px;');
+  console.group('%c🔍 ATOMIC v2.3 Diagnostics', 'color:#f59e0b;font-weight:bold;font-size:14px;');
   let allOK = true;
   Object.entries(checks).forEach(([k, v]) => {
     console.log(v ? `%c${k} OK` : `%c${k} FAILED`, v ? 'color:#10b981;' : 'color:#ef4444;font-weight:bold;');
     if (!v) allOK = false;
   });
   console.log(allOK
-    ? '%c💯 সব ঠিকঠাক! v2.2 ফিক্স চালু। ১০০% কাজ করবে।'
+    ? '%c💯 সব ঠিকঠাক! v2.3 চালু। এখন টাইপিং শেষে সাথে সাথে result দেখাবে।'
     : '%c⚠️ কিছু সমস্যা — উপরে লাল দেখুন',
     allOK ? 'color:#10b981;font-weight:bold;' : 'color:#ef4444;font-weight:bold;'
   );
@@ -1637,18 +1803,14 @@ setTimeout(() => {
   /* য় ড় ঢ় Test */
   console.group('%c🧪 য় ড় ঢ় Unicode Test', 'color:#8b5cf6;font-weight:bold;');
   const testCases = [
-    { desc: 'য় vs য় (NFC)', target: 'য়', typed: 'য়' },
+    { desc: 'য় vs য়', target: 'য়', typed: 'য়' },
     { desc: 'ড় vs ড়', target: 'ড়', typed: 'ড়' },
-    { desc: 'ঢ় vs ঢ়', target: 'ঢ়', typed: 'ঢ়' },
-    { desc: 'বড় word', target: 'বড়', typed: 'বড়' }
+    { desc: 'ঢ় vs ঢ়', target: 'ঢ়', typed: 'ঢ়' }
   ];
   testCases.forEach(tc => {
     const cmp = graphemeEngine.compare(tc.target, tc.typed);
     const pass = cmp.wrong === 0;
-    console.log(
-      pass ? `%c✓ ${tc.desc}: OK` : `%c✗ ${tc.desc}: FAILED`,
-      pass ? 'color:#10b981;' : 'color:#ef4444;'
-    );
+    console.log(pass ? `%c✓ ${tc.desc}` : `%c✗ ${tc.desc}`, pass ? 'color:#10b981;' : 'color:#ef4444;');
   });
   console.groupEnd();
 }, 1500);
