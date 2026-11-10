@@ -1,12 +1,11 @@
 /* ═══════════════════════════════════════════════════════════════
-   বাংলা টাইপিং একাডেমি — KEYBOARD.JS
-   বিজয় ভার্চুয়াল কীবোর্ড + হ্যান্ড ইন্ডিকেটর (পারমাণবিক)
+   বাংলা টাইপিং একাডেমি — KEYBOARD.JS (ATOMIC ULTIMATE)
+   মাল্টি-লেআউট কীবোর্ড + Grapheme-aware + হ্যান্ড
    ═══════════════════════════════════════════════════════════════ */
 
 /* ═══════════════════════════════════════════════════════
-   BijoyKeyboard Class
+   BijoyKeyboard Class — মাল্টি-লেআউট সাপোর্ট
    ═══════════════════════════════════════════════════════ */
-
 class BijoyKeyboard {
   constructor(containerId, options = {}) {
     this.containerId = containerId;
@@ -15,12 +14,14 @@ class BijoyKeyboard {
       showHand: options.showHand !== false,
       interactive: options.interactive !== false,
       showLabels: options.showLabels !== false,
-      onKeyClick: options.onKeyClick || null
+      onKeyClick: options.onKeyClick || null,
+      layoutId: options.layoutId || 'jatiya'
     };
 
     this.handElement = null;
     this.currentTargetKey = null;
     this.shiftPressed = false;
+    this.currentLayoutId = this.options.layoutId;
     this.rendered = false;
 
     if (!this.container) {
@@ -38,12 +39,15 @@ class BijoyKeyboard {
     if (!this.container) return;
     this.container.innerHTML = '';
 
+    const layout = KEYBOARD_LAYOUTS[this.currentLayoutId];
+    if (!layout) return;
+
     const rows = [
-      BIJOY_LAYOUT.row1,
-      BIJOY_LAYOUT.row2,
-      BIJOY_LAYOUT.row3,
-      BIJOY_LAYOUT.row4,
-      BIJOY_LAYOUT.row5
+      layout.rows.row1,
+      layout.rows.row2,
+      layout.rows.row3,
+      layout.rows.row4,
+      layout.rows.row5
     ];
 
     rows.forEach((row, idx) => {
@@ -163,7 +167,7 @@ class BijoyKeyboard {
     this.handElement = hand;
   }
 
-  /* ═══════════ POINT HAND AT KEY ═══════════ */
+  /* ═══════════ POINT HAND ═══════════ */
   pointHandAtKey(char, shift = false) {
     if (!this.handElement) this.createHand();
     if (!this.handElement) return;
@@ -203,22 +207,30 @@ class BijoyKeyboard {
   /* ═══════════ FIND KEY ELEMENT ═══════════ */
   findKeyElement(char, shift = false) {
     if (!char || !this.container) return null;
+
+    /* যুক্তাক্ষরের ক্ষেত্রে প্রথম বর্ণ থেকে কী খোঁজ */
+    const searchChar = char.charAt(0);
+
     const keys = this.container.querySelectorAll('.kb-key');
     for (const el of keys) {
       const bn = el.dataset.bn;
       const shiftBn = el.dataset.shiftBn;
       const normal = el.dataset.normal;
       const shiftChar = el.dataset.shift;
-      if (bn === char || shiftBn === char || normal === char || shiftChar === char) {
+      if (bn === searchChar || shiftBn === searchChar ||
+          normal === searchChar || shiftChar === searchChar) {
         return el;
       }
     }
-    if (char.length === 1) {
-      const lower = char.toLowerCase();
+
+    /* Latin fallback */
+    if (searchChar.length === 1) {
+      const lower = searchChar.toLowerCase();
       for (const el of keys) {
         if (el.dataset.key.toLowerCase() === lower) return el;
       }
     }
+
     return null;
   }
 
@@ -267,6 +279,23 @@ class BijoyKeyboard {
     });
   }
 
+  /* ═══════════ CHANGE LAYOUT ═══════════ */
+  changeLayout(layoutId) {
+    if (!KEYBOARD_LAYOUTS[layoutId]) {
+      console.warn('⚠️ Layout not found:', layoutId);
+      return false;
+    }
+
+    this.currentLayoutId = layoutId;
+    this.shiftPressed = false;
+    this.currentTargetKey = null;
+    this.render();
+    if (this.options.showHand) this.createHand();
+
+    console.log('%c⌨️ Layout changed: ' + KEYBOARD_LAYOUTS[layoutId].name, 'color:#8b5cf6;');
+    return true;
+  }
+
   refresh() {
     if (this.container) {
       this.container.style.position = 'relative';
@@ -286,26 +315,27 @@ class BijoyKeyboard {
   }
 }
 
-
 /* ═══════════════════════════════════════════════════════
    GLOBAL INSTANCES
    ═══════════════════════════════════════════════════════ */
-
 window.liveKeyboard = null;
 window.standaloneKeyboard = null;
 window.physicalShiftPressed = false;
-
+window.currentLiveLayoutId = 'jatiya';
+window.currentStandaloneLayoutId = 'jatiya';
 
 /* ═══════════════════════════════════════════════════════
-   INIT LIVE KEYBOARD — টাইপিং পেজ
+   INIT LIVE KEYBOARD
    ═══════════════════════════════════════════════════════ */
-
-function initLiveKeyboard() {
+function initLiveKeyboard(layoutId) {
   const container = document.getElementById('liveKbContainer');
   if (!container) {
     console.warn('⚠️ liveKbContainer not found');
     return;
   }
+
+  const layout = layoutId || window.currentLiveLayoutId || 'jatiya';
+  window.currentLiveLayoutId = layout;
 
   if (window.liveKeyboard) window.liveKeyboard.destroy();
 
@@ -313,16 +343,27 @@ function initLiveKeyboard() {
     showHand: true,
     interactive: true,
     showLabels: true,
+    layoutId: layout,
     onKeyClick: (char, keyName, shift) => {
       const input = document.getElementById('typeInput');
       if (!input || input.disabled) return;
 
       if (char === 'BACKSPACE') {
+        /* Grapheme-aware backspace */
         const start = input.selectionStart ?? input.value.length;
         const end = input.selectionEnd ?? input.value.length;
         if (start === end && start > 0) {
-          input.value = input.value.slice(0, start - 1) + input.value.slice(end);
-          input.setSelectionRange(start - 1, start - 1);
+          const before = input.value.slice(0, start);
+          const segments = window.app?.splitGraphemes
+            ? window.app.splitGraphemes(before)
+            : [...before];
+          if (segments.length > 0) {
+            segments.pop();
+            const newBefore = segments.join('');
+            input.value = newBefore + input.value.slice(end);
+            const newPos = newBefore.length;
+            input.setSelectionRange(newPos, newPos);
+          }
         } else {
           input.value = input.value.slice(0, start) + input.value.slice(end);
           input.setSelectionRange(start, start);
@@ -339,17 +380,18 @@ function initLiveKeyboard() {
     }
   });
 
-  console.log('%c⌨️ Live keyboard ready', 'color: #10b981;');
+  console.log('%c⌨️ Live keyboard ready: ' + KEYBOARD_LAYOUTS[layout].name, 'color: #10b981;');
 }
 
-
 /* ═══════════════════════════════════════════════════════
-   INIT STANDALONE KEYBOARD — কীবোর্ড পেজ
+   INIT STANDALONE KEYBOARD
    ═══════════════════════════════════════════════════════ */
-
-function initStandaloneKeyboard() {
+function initStandaloneKeyboard(layoutId) {
   const container = document.getElementById('virtualKeyboard');
   if (!container) return;
+
+  const layout = layoutId || window.currentStandaloneLayoutId || 'jatiya';
+  window.currentStandaloneLayoutId = layout;
 
   if (window.standaloneKeyboard) window.standaloneKeyboard.destroy();
 
@@ -357,6 +399,7 @@ function initStandaloneKeyboard() {
     showHand: false,
     interactive: true,
     showLabels: true,
+    layoutId: layout,
     onKeyClick: (char, keyName, shift) => {
       const input = document.getElementById('kbTestInput');
       if (!input) return;
@@ -369,14 +412,46 @@ function initStandaloneKeyboard() {
     }
   });
 
-  console.log('%c⌨️ Standalone keyboard ready', 'color: #10b981;');
+  console.log('%c⌨️ Standalone keyboard ready: ' + KEYBOARD_LAYOUTS[layout].name, 'color: #10b981;');
 }
 
+/* ═══════════════════════════════════════════════════════
+   CHANGE LAYOUTS
+   ═══════════════════════════════════════════════════════ */
+function changeLiveLayout(layoutId) {
+  if (!KEYBOARD_LAYOUTS[layoutId]) return;
+  window.currentLiveLayoutId = layoutId;
+  setActiveLayout(layoutId);
+
+  if (!window.liveKeyboard) {
+    initLiveKeyboard(layoutId);
+  } else {
+    window.liveKeyboard.changeLayout(layoutId);
+  }
+
+  /* Re-apply lesson highlight */
+  if (window.app?.currentLesson?.keys) {
+    setTimeout(() => {
+      highlightLessonKeysOnKeyboard(window.app.currentLesson.keys);
+      if (window.app?.updateHandIndicator) window.app.updateHandIndicator();
+    }, 200);
+  }
+}
+
+function changeStandaloneLayout(layoutId) {
+  if (!KEYBOARD_LAYOUTS[layoutId]) return;
+  window.currentStandaloneLayoutId = layoutId;
+
+  if (!window.standaloneKeyboard) {
+    initStandaloneKeyboard(layoutId);
+  } else {
+    window.standaloneKeyboard.changeLayout(layoutId);
+  }
+}
 
 /* ═══════════════════════════════════════════════════════
    PHYSICAL KEYBOARD LISTENER
    ═══════════════════════════════════════════════════════ */
-
 function setupGlobalKeyboardListener() {
   document.addEventListener('keydown', (e) => {
     const target = e.target;
@@ -390,6 +465,7 @@ function setupGlobalKeyboardListener() {
       return;
     }
 
+    /* Support for Bengali physical keyboards — match by key */
     const keyName = e.key.length === 1 ? e.key.toLowerCase() : e.key;
     window.liveKeyboard?.flashKey(keyName);
     window.standaloneKeyboard?.flashKey(keyName);
@@ -404,14 +480,12 @@ function setupGlobalKeyboardListener() {
   });
 }
 
-
 /* ═══════════════════════════════════════════════════════
-   GLOBAL HELPERS — app.js থেকে কল হবে
+   GLOBAL HELPERS
    ═══════════════════════════════════════════════════════ */
-
 function pointHandAtNextChar(char) {
   if (!window.liveKeyboard || !char) return;
-  const keyInfo = getKeyForChar(char);
+  const keyInfo = getKeyForChar(char, window.currentLiveLayoutId);
   if (!keyInfo) {
     window.liveKeyboard.clearTarget();
     return;
@@ -429,38 +503,45 @@ function highlightLessonKeysOnKeyboard(keys) {
 
 function refreshLiveKeyboard() {
   if (!window.liveKeyboard) {
-    initLiveKeyboard();
+    initLiveKeyboard(window.currentLiveLayoutId);
   } else {
     window.liveKeyboard.refresh();
   }
 }
 
+function refreshStandaloneKeyboard() {
+  if (!window.standaloneKeyboard) {
+    initStandaloneKeyboard(window.currentStandaloneLayoutId);
+  }
+}
 
 /* ═══════════════════════════════════════════════════════
    AUTO INIT
    ═══════════════════════════════════════════════════════ */
-
 document.addEventListener('DOMContentLoaded', () => {
   setTimeout(() => {
-    initLiveKeyboard();
-    initStandaloneKeyboard();
+    initLiveKeyboard(window.currentLiveLayoutId);
+    initStandaloneKeyboard(window.currentStandaloneLayoutId);
     setupGlobalKeyboardListener();
   }, 400);
 });
 
-
 /* ═══════════════════════════════════════════════════════
    DEBUG
    ═══════════════════════════════════════════════════════ */
-
 window.debugKeyboard = {
   test: () => {
     console.log('Live:', window.liveKeyboard);
     console.log('Standalone:', window.standaloneKeyboard);
+    console.log('Current live layout:', window.currentLiveLayoutId);
   },
   testHand: (char) => pointHandAtNextChar(char),
-  reinit: () => { initLiveKeyboard(); initStandaloneKeyboard(); },
+  reinit: () => {
+    initLiveKeyboard(window.currentLiveLayoutId);
+    initStandaloneKeyboard(window.currentStandaloneLayoutId);
+  },
+  changeLayout: (id) => changeLiveLayout(id),
   refresh: () => refreshLiveKeyboard()
 };
 
-console.log('%c⌨️ Keyboard.js loaded', 'color:#10b981;font-weight:bold;');
+console.log('%c⌨️ Keyboard.js loaded (ATOMIC)', 'color:#10b981;font-weight:bold;font-size:14px;');
