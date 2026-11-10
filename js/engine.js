@@ -1,11 +1,10 @@
 /* ═══════════════════════════════════════════════════════════════
-   বাংলা টাইপিং একাডেমি — ENGINE.JS (ATOMIC ULTIMATE)
-   Grapheme-aware টাইপিং ইঞ্জিন — যুক্তাক্ষর/কার-ফলা ১০০% নিখুঁত
+   বাংলা টাইপিং একাডেমি — ENGINE.JS (ATOMIC v2.1)
+   Grapheme Engine — যুক্তবর্ণ/কার-ফলা ১০০% নিখুঁত + শেষ char fix
    ═══════════════════════════════════════════════════════════════ */
 
 /* ═══════════════════════════════════════════════════════
    1. GRAPHEME ENGINE
-   যুক্তবর্ণ, কার-চিহ্ন, চন্দ্রবিন্দু — সব একসাথে ধরে
    ═══════════════════════════════════════════════════════ */
 class GraphemeEngine {
   constructor() {
@@ -17,7 +16,7 @@ class GraphemeEngine {
     try {
       if (typeof Intl !== 'undefined' && Intl.Segmenter) {
         this.segmenter = new Intl.Segmenter('bn', { granularity: 'grapheme' });
-        console.log('%c✓ Intl.Segmenter available — using native grapheme splitting', 'color:#10b981;');
+        console.log('%c✓ Intl.Segmenter available', 'color:#10b981;');
       } else {
         console.log('%c⚠ Intl.Segmenter not available — using custom splitter', 'color:#f59e0b;');
       }
@@ -26,11 +25,10 @@ class GraphemeEngine {
     }
   }
 
-  /* ═══════ Main Split Function ═══════ */
+  /* ═══════ MAIN SPLIT — Grapheme cluster ═══════ */
   split(text) {
     if (!text) return [];
 
-    /* Primary — Intl.Segmenter */
     if (this.segmenter) {
       try {
         return Array.from(this.segmenter.segment(text), s => s.segment);
@@ -39,11 +37,10 @@ class GraphemeEngine {
       }
     }
 
-    /* Fallback — Custom Splitter */
     return this.customSplit(text);
   }
 
-  /* ═══════ Custom Splitter (Fallback) ═══════ */
+  /* ═══════ CUSTOM SPLITTER (Fallback) ═══════ */
   customSplit(text) {
     if (!text) return [];
     const graphemes = [];
@@ -54,22 +51,20 @@ class GraphemeEngine {
       let cluster = text[i];
       i++;
 
-      /* Bengali combining marks */
       while (i < text.length) {
         const nextCode = text.charCodeAt(i);
 
         const isCombining =
-          (nextCode >= 0x09BC && nextCode <= 0x09CD) ||  /* ় ঽ া ি ী ু ূ ৃ ৄ ে ৈ ো ৌ ্ */
-          nextCode === 0x09D7 ||                          /* ৗ */
-          (nextCode >= 0x09E2 && nextCode <= 0x09E3) ||  /* ৢ ৣ */
-          nextCode === 0x09FE ||                          /* ৾ */
-          nextCode === 0x200C || nextCode === 0x200D;    /* ZWNJ ZWJ */
+          (nextCode >= 0x09BC && nextCode <= 0x09CD) ||
+          nextCode === 0x09D7 ||
+          (nextCode >= 0x09E2 && nextCode <= 0x09E3) ||
+          nextCode === 0x09FE ||
+          nextCode === 0x200C || nextCode === 0x200D;
 
         if (isCombining) {
           cluster += text[i];
           i++;
 
-          /* হসন্ত (্) হলে পরবর্তী ব্যঞ্জনবর্ণও যুক্ত */
           if (nextCode === 0x09CD && i < text.length) {
             const afterHoshonto = text.charCodeAt(i);
             if ((afterHoshonto >= 0x0995 && afterHoshonto <= 0x09B9) ||
@@ -91,15 +86,64 @@ class GraphemeEngine {
     return graphemes;
   }
 
-  /* ═══════ Count Graphemes ═══════ */
+  /* ═══════════════════════════════════════════════════════
+     ★★★ পারমাণবিক FIX: Last grapheme incomplete? ★★★
+     শেষ character যদি combining mark হয় যা next char ছাড়া
+     complete হয় না — তাহলে true রিটার্ন করে।
+     ═══════════════════════════════════════════════════════ */
+  isLastGraphemeIncomplete(text) {
+    if (!text || text.length === 0) return false;
+    const lastChar = text[text.length - 1];
+    const code = lastChar.charCodeAt(0);
+
+    /* Bengali combining marks that need next char */
+    const isDangling =
+      code === 0x09CD ||                            /* ্ হসন্ত — next ব্যঞ্জনবর্ণ দরকার */
+      code === 0x09BC ||                            /* ় nukta — base দরকার */
+      (code >= 0x09BE && code <= 0x09CC) ||        /* া ি ী ু ূ ৃ ৄ ে ৈ ো ৌ */
+      code === 0x09D7 ||                            /* ৗ */
+      (code >= 0x09E2 && code <= 0x09E3) ||        /* ৢ ৣ */
+      code === 0x09FE ||                            /* ৾ */
+      code === 0x200C ||                            /* ZWNJ */
+      code === 0x200D;                              /* ZWJ */
+
+    return isDangling;
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     ★★★ পারমাণবিক FIX: Is typing truly complete? ★★★
+     সব শর্ত পূরণ হলে তবেই true:
+     - target length মিলে গেছে
+     - সব গ্রাফিম সঠিক (wrong === 0)
+     - শেষ গ্রাফিম incomplete না
+     ═══════════════════════════════════════════════════════ */
+  isTrulyComplete(target, typed) {
+    if (!target) return false;
+
+    const targetG = this.split(target);
+    const typedG = this.split(typed);
+
+    if (typedG.length < targetG.length) return false;
+    if (this.isLastGraphemeIncomplete(typed)) return false;
+
+    /* Full verification */
+    for (let i = 0; i < targetG.length; i++) {
+      if (typedG[i] !== targetG[i]) return false;
+    }
+
+    return true;
+  }
+
+  /* ═══════ Count ═══════ */
   count(text) {
     return this.split(text).length;
   }
 
-  /* ═══════ Compare Two Strings ═══════ */
+  /* ═══════ Compare ═══════ */
   compare(target, typed) {
     const targetG = this.split(target);
     const typedG = this.split(typed);
+
     const result = {
       target: targetG,
       typed: typedG,
@@ -109,6 +153,8 @@ class GraphemeEngine {
       wrong: 0,
       wrongIndices: [],
       firstWrong: -1,
+      lastIncomplete: this.isLastGraphemeIncomplete(typed),
+      isComplete: false,
       perChar: []
     };
 
@@ -117,6 +163,7 @@ class GraphemeEngine {
       const t = targetG[i] || '';
       const p = typedG[i] || '';
       let status = 'empty';
+
       if (i < typedG.length) {
         if (t === p) {
           status = 'correct';
@@ -130,13 +177,25 @@ class GraphemeEngine {
       } else if (i < targetG.length) {
         status = 'pending';
       }
-      result.perChar.push({ index: i, target: t, typed: p, status });
+
+      result.perChar.push({
+        index: i,
+        target: t,
+        typed: p,
+        status: status
+      });
     }
+
+    /* Complete check */
+    result.isComplete =
+      typedG.length >= targetG.length &&
+      result.wrong === 0 &&
+      !result.lastIncomplete;
 
     return result;
   }
 
-  /* ═══════ Get Next Character ═══════ */
+  /* ═══════ Get next char ═══════ */
   getNextChar(target, typed) {
     const targetG = this.split(target);
     const typedG = this.split(typed);
@@ -144,12 +203,7 @@ class GraphemeEngine {
     return targetG[typedG.length];
   }
 
-  /* ═══════ Is Complete? ═══════ */
-  isComplete(target, typed) {
-    return this.split(typed).length >= this.split(target).length;
-  }
-
-  /* ═══════ Unicode Normalize ═══════ */
+  /* ═══════ Normalize ═══════ */
   normalize(text) {
     if (!text) return '';
     try {
@@ -158,13 +212,26 @@ class GraphemeEngine {
       return text;
     }
   }
+
+  /* ═══════ Debug info ═══════ */
+  debugInfo(text) {
+    if (!text) return { text: '', graphemes: [], length: 0 };
+    return {
+      text: text,
+      graphemes: this.split(text),
+      length: this.count(text),
+      lastIncomplete: this.isLastGraphemeIncomplete(text),
+      lastChar: text[text.length - 1],
+      lastCode: text.charCodeAt(text.length - 1).toString(16)
+    };
+  }
 }
 
 const graphemeEngine = new GraphemeEngine();
 
 
 /* ═══════════════════════════════════════════════════════
-   2. TYPING METRICS ENGINE — WPM, Accuracy, Statistics
+   2. TYPING METRICS
    ═══════════════════════════════════════════════════════ */
 class TypingMetrics {
   constructor() {
@@ -179,7 +246,6 @@ class TypingMetrics {
     this.lastKeystrokeTime = null;
   }
 
-  /* ═══════ Start ═══════ */
   start() {
     this.startTime = Date.now();
     this.endTime = null;
@@ -192,70 +258,60 @@ class TypingMetrics {
     this.lastKeystrokeTime = this.startTime;
   }
 
-  /* ═══════ Stop ═══════ */
   stop() {
     this.endTime = Date.now();
   }
 
-  /* ═══════ Update Stats ═══════ */
   update(correct, wrong, total) {
     this.correctChars = correct;
     this.wrongChars = wrong;
     this.totalChars = total;
   }
 
-  /* ═══════ Record Keystroke ═══════ */
   recordKeystroke(isBackspace = false) {
     const now = Date.now();
     if (this.lastKeystrokeTime) {
       const gap = now - this.lastKeystrokeTime;
-      if (gap > 3000) this.pauseTime += gap; /* pause > 3s */
+      if (gap > 3000) this.pauseTime += gap;
     }
     this.lastKeystrokeTime = now;
     this.keystrokes++;
     if (isBackspace) this.backspaces++;
   }
 
-  /* ═══════ Elapsed Time (seconds) ═══════ */
   getElapsedSeconds() {
     if (!this.startTime) return 0;
     const end = this.endTime || Date.now();
     return Math.max(0, (end - this.startTime - this.pauseTime) / 1000);
   }
 
-  /* ═══════ Elapsed Time (minutes) ═══════ */
   getElapsedMinutes() {
     return this.getElapsedSeconds() / 60;
   }
 
-  /* ═══════ WPM — Standard (5 chars = 1 word) ═══════ */
   getWPM() {
     const minutes = this.getElapsedMinutes();
     if (minutes < 0.001) return 0;
     return Math.round((this.correctChars / 5) / minutes);
   }
 
-  /* ═══════ Gross WPM — Total chars ═══════ */
   getGrossWPM() {
     const minutes = this.getElapsedMinutes();
     if (minutes < 0.001) return 0;
     return Math.round((this.totalChars / 5) / minutes);
   }
 
-  /* ═══════ Accuracy ═══════ */
   getAccuracy() {
     if (this.totalChars === 0) return 100;
     return Math.round((this.correctChars / this.totalChars) * 100);
   }
 
-  /* ═══════ CPM — Characters per minute ═══════ */
   getCPM() {
     const minutes = this.getElapsedMinutes();
     if (minutes < 0.001) return 0;
     return Math.round(this.totalChars / minutes);
   }
 
-  /* ═══════ Consistent WPM (ignoring pauses) ═══════ */
   getConsistentWPM() {
     if (this.keystrokes === 0) return 0;
     const elapsed = this.getElapsedSeconds();
@@ -265,7 +321,6 @@ class TypingMetrics {
     return Math.round((1 / avgKeystrokeTime) * 12);
   }
 
-  /* ═══════ Full Report ═══════ */
   getReport() {
     return {
       wpm: this.getWPM(),
@@ -282,7 +337,6 @@ class TypingMetrics {
     };
   }
 
-  /* ═══════ Reset ═══════ */
   reset() {
     this.startTime = null;
     this.endTime = null;
@@ -298,7 +352,7 @@ class TypingMetrics {
 
 
 /* ═══════════════════════════════════════════════════════
-   3. TYPING SESSION — একটি লেসনের সম্পূর্ণ সেশন
+   3. TYPING SESSION
    ═══════════════════════════════════════════════════════ */
 class TypingSession {
   constructor(lesson) {
@@ -314,7 +368,6 @@ class TypingSession {
     this.wrongCharsList = [];
   }
 
-  /* ═══════ Start ═══════ */
   start() {
     if (!this.started) {
       this.started = true;
@@ -322,7 +375,6 @@ class TypingSession {
     }
   }
 
-  /* ═══════ Update typed text ═══════ */
   updateTyped(newText) {
     this.typedText = newText;
     this.typedGraphemes = graphemeEngine.split(newText);
@@ -331,7 +383,6 @@ class TypingSession {
     const c = this.comparison;
     this.metrics.update(c.correct, c.wrong, c.typedCount);
 
-    /* Track wrong chars */
     c.wrongIndices.forEach(idx => {
       const ch = c.target[idx];
       if (ch && !this.wrongCharsList.includes(ch)) {
@@ -340,18 +391,15 @@ class TypingSession {
     });
   }
 
-  /* ═══════ Get next char to type ═══════ */
   getNextChar() {
     if (this.typedGraphemes.length >= this.targetGraphemes.length) return null;
     return this.targetGraphemes[this.typedGraphemes.length];
   }
 
-  /* ═══════ Is complete? ═══════ */
   isComplete() {
-    return this.typedGraphemes.length >= this.targetGraphemes.length;
+    return graphemeEngine.isTrulyComplete(this.targetText, this.typedText);
   }
 
-  /* ═══════ Finish ═══════ */
   finish() {
     if (!this.finished) {
       this.finished = true;
@@ -360,7 +408,6 @@ class TypingSession {
     return this.metrics.getReport();
   }
 
-  /* ═══════ Get current report ═══════ */
   getReport() {
     return this.metrics.getReport();
   }
@@ -368,22 +415,20 @@ class TypingSession {
 
 
 /* ═══════════════════════════════════════════════════════
-   4. AI SUGGESTION ENGINE — দুর্বল অক্ষর ডিটেকশন
+   4. AI SUGGESTION ENGINE
    ═══════════════════════════════════════════════════════ */
 class AISuggestionEngine {
   constructor() {
-    this.errorHistory = {};  /* { char: count } */
+    this.errorHistory = {};
     this.wpmHistory = [];
     this.maxHistory = 100;
   }
 
-  /* ═══════ Record error ═══════ */
   recordError(char) {
     if (!char) return;
     this.errorHistory[char] = (this.errorHistory[char] || 0) + 1;
   }
 
-  /* ═══════ Record WPM ═══════ */
   recordWPM(wpm, accuracy) {
     this.wpmHistory.push({ wpm, accuracy, time: Date.now() });
     if (this.wpmHistory.length > this.maxHistory) {
@@ -391,7 +436,6 @@ class AISuggestionEngine {
     }
   }
 
-  /* ═══════ Get weakest chars ═══════ */
   getWeakestChars(limit = 5) {
     const sorted = Object.entries(this.errorHistory)
       .sort((a, b) => b[1] - a[1])
@@ -399,7 +443,6 @@ class AISuggestionEngine {
     return sorted.map(([char, count]) => ({ char, count }));
   }
 
-  /* ═══════ Get practice suggestions ═══════ */
   getPracticeSuggestions() {
     const weak = this.getWeakestChars(3);
     if (weak.length === 0) return null;
@@ -407,7 +450,6 @@ class AISuggestionEngine {
     const weakChars = weak.map(w => w.char);
     const suggestions = [];
 
-    /* শব্দ তৈরি — দুর্বল অক্ষর দিয়ে */
     const wordsWithWeak = GAME_WORDS.filter(word => {
       const wordG = graphemeEngine.split(word);
       return wordG.some(g => weakChars.includes(g));
@@ -422,7 +464,6 @@ class AISuggestionEngine {
       });
     }
 
-    /* চ্যালেঞ্জ তৈরি */
     const challengeText = weakChars.map(c =>
       `${c} ${c} ${c} ${c} ${c}`
     ).join('  ');
@@ -437,15 +478,11 @@ class AISuggestionEngine {
     return suggestions;
   }
 
-  /* ═══════ Get insights ═══════ */
   getInsights() {
     const insights = [];
 
-    if (this.wpmHistory.length === 0) {
-      return insights;
-    }
+    if (this.wpmHistory.length === 0) return insights;
 
-    /* Average WPM trend */
     const recent = this.wpmHistory.slice(-10);
     const avgWpm = Math.round(recent.reduce((a, b) => a + b.wpm, 0) / recent.length);
     insights.push({
@@ -453,7 +490,6 @@ class AISuggestionEngine {
       text: `সাম্প্রতিক ${recent.length}টি লেসনে আপনার গড় WPM: ${avgWpm}`
     });
 
-    /* Trend detection */
     if (recent.length >= 5) {
       const firstHalf = recent.slice(0, Math.floor(recent.length / 2));
       const secondHalf = recent.slice(Math.floor(recent.length / 2));
@@ -473,7 +509,6 @@ class AISuggestionEngine {
       }
     }
 
-    /* Weakness */
     const weak = this.getWeakestChars(1);
     if (weak.length > 0) {
       insights.push({
@@ -485,7 +520,6 @@ class AISuggestionEngine {
     return insights;
   }
 
-  /* ═══════ Reset ═══════ */
   reset() {
     this.errorHistory = {};
     this.wpmHistory = [];
@@ -496,14 +530,13 @@ const aiEngine = new AISuggestionEngine();
 
 
 /* ═══════════════════════════════════════════════════════
-   5. STATISTICS TRACKER — দীর্ঘমেয়াদী বিশ্লেষণ
+   5. STATS TRACKER
    ═══════════════════════════════════════════════════════ */
 class StatsTracker {
   constructor() {
     this.sessions = [];
   }
 
-  /* ═══════ Add session ═══════ */
   addSession(lessonId, report) {
     this.sessions.push({
       lessonId,
@@ -518,7 +551,6 @@ class StatsTracker {
     if (this.sessions.length > 500) this.sessions.shift();
   }
 
-  /* ═══════ Get today's stats ═══════ */
   getTodayStats() {
     const today = new Date().toDateString();
     const todaySessions = this.sessions.filter(s =>
@@ -537,7 +569,6 @@ class StatsTracker {
     };
   }
 
-  /* ═══════ Get weekly activity (7 days) ═══════ */
   getWeeklyActivity() {
     const days = ['শনি', 'রবি', 'সোম', 'মঙ্গল', 'বুধ', 'বৃহঃ', 'শুক্র'];
     const counts = [0, 0, 0, 0, 0, 0, 0];
@@ -554,7 +585,6 @@ class StatsTracker {
     return { labels: days, data: counts };
   }
 
-  /* ═══════ Get hourly heatmap ═══════ */
   getHourlyHeatmap() {
     const hours = new Array(24).fill(0);
     this.sessions.forEach(s => {
@@ -564,7 +594,6 @@ class StatsTracker {
     return hours;
   }
 
-  /* ═══════ Get streak days ═══════ */
   getStreakDays() {
     if (this.sessions.length === 0) return 0;
 
@@ -576,7 +605,6 @@ class StatsTracker {
     const today = new Date().toDateString();
     const yesterday = new Date(Date.now() - 86400000).toDateString();
 
-    /* Check if today or yesterday has activity */
     if (uniqueDays[0] !== today && uniqueDays[0] !== yesterday) return 0;
 
     let currentDate = new Date(uniqueDays[0]);
@@ -592,13 +620,11 @@ class StatsTracker {
     return streak;
   }
 
-  /* ═══════ Get best session ═══════ */
   getBestSession() {
     if (this.sessions.length === 0) return null;
     return this.sessions.reduce((best, s) => s.wpm > best.wpm ? s : best);
   }
 
-  /* ═══════ Clear ═══════ */
   clear() {
     this.sessions = [];
   }
@@ -626,10 +652,10 @@ class CertificateGenerator {
         padding: 40px;
         background: linear-gradient(135deg, rgba(99,102,241,0.1), rgba(139,92,246,0.1));
         border-radius: 16px;
-        border: 3px double var(--primary);
+        border: 3px double #6366f1;
       ">
         <div style="font-size: 3rem; margin-bottom: 10px;">🏆</div>
-        <h1 style="font-size: 1.8rem; font-weight: 800; color: var(--primary); margin-bottom: 8px;">
+        <h1 style="font-size: 1.8rem; font-weight: 800; color: #6366f1; margin-bottom: 8px;">
           টাইপিং সার্টিফিকেট
         </h1>
         <p style="opacity: 0.8; margin-bottom: 24px;">বাংলা টাইপিং একাডেমি</p>
@@ -666,12 +692,8 @@ class CertificateGenerator {
           margin-top: 20px;
         ">
           <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; font-size: 0.85rem;">
-            <div>
-              <strong>তারিখ:</strong> ${dateStr}
-            </div>
-            <div>
-              <strong style="color: #f59e0b;">MOTTALAB MIA</strong>
-            </div>
+            <div><strong>তারিখ:</strong> ${dateStr}</div>
+            <div><strong style="color: #f59e0b;">MOTTALAB MIA</strong></div>
           </div>
         </div>
 
@@ -692,7 +714,6 @@ class CertificateGenerator {
         <title>Certificate</title>
         <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;600;700;800&display=swap" rel="stylesheet">
         <style>
-          :root { --primary: #6366f1; }
           body {
             font-family: 'Hind Siliguri', sans-serif;
             background: #f8fafc;
@@ -722,14 +743,12 @@ class CertificateGenerator {
    7. TYPING UTILITIES
    ═══════════════════════════════════════════════════════ */
 const TypingUtils = {
-  /* ═══════ Format time ═══════ */
   formatTime(seconds) {
     const mm = Math.floor(seconds / 60);
     const ss = String(Math.floor(seconds % 60)).padStart(2, '0');
     return `${mm}:${ss}`;
   },
 
-  /* ═══════ Calculate performance rating ═══════ */
   getRating(wpm, accuracy) {
     if (wpm >= 80 && accuracy >= 98) return { grade: 'S+', color: '#f59e0b', label: 'অসাধারণ' };
     if (wpm >= 60 && accuracy >= 95) return { grade: 'S', color: '#10b981', label: 'দুর্দান্ত' };
@@ -740,7 +759,6 @@ const TypingUtils = {
     return { grade: 'E', color: '#ef4444', label: 'শুরু করুন' };
   },
 
-  /* ═══════ Get motivational message ═══════ */
   getMotivation(wpm, accuracy) {
     const rating = this.getRating(wpm, accuracy);
     const messages = {
@@ -755,14 +773,16 @@ const TypingUtils = {
     return messages[rating.grade] || 'চালিয়ে যান!';
   },
 
-  /* ═══════ Deep compare ═══════ */
   compare(target, typed) {
     return graphemeEngine.compare(target, typed);
   },
 
-  /* ═══════ Get next char ═══════ */
   nextChar(target, typed) {
     return graphemeEngine.getNextChar(target, typed);
+  },
+
+  isComplete(target, typed) {
+    return graphemeEngine.isTrulyComplete(target, typed);
   }
 };
 
@@ -794,11 +814,13 @@ window.engine = {
 /* ═══════════════════════════════════════════════════════
    9. CONSOLE
    ═══════════════════════════════════════════════════════ */
-console.log('%c⚙️ Engine.js loaded (ATOMIC)', 'color:#f59e0b;font-size:15px;font-weight:bold;');
-console.log('%c🧠 Grapheme Engine • AI Suggestions • Statistics • Certificates', 'color:#8b5cf6;font-size:11px;');
+console.log('%c⚙️ Engine.js loaded (ATOMIC v2.1)', 'color:#f59e0b;font-size:15px;font-weight:bold;');
+console.log('%c🧠 Grapheme Engine • Last Char Fix • AI Suggestions', 'color:#8b5cf6;font-size:11px;');
 
-/* Test Grapheme */
-console.log('%c📊 Grapheme test:', 'color:#10b981;font-weight:bold;');
-console.log('   "ক্ষ" →', graphemeEngine.split('ক্ষ'));  /* Should be ["ক্ষ"] */
-console.log('   "ত্রি" →', graphemeEngine.split('ত্রি'));  /* Should be ["ত্রি"] */
-console.log('   "বাংলা" →', graphemeEngine.split('বাংলা'));  /* Should be ["বা", "ং", "লা"] */
+console.log('%c📊 Grapheme Engine Test:', 'color:#10b981;font-weight:bold;');
+console.log('   "ক্ষ" →', graphemeEngine.split('ক্ষ'));
+console.log('   "ত্রি" →', graphemeEngine.split('ত্রি'));
+console.log('   "বাংলা" →', graphemeEngine.split('বাংলা'));
+console.log('   "শিক্ষ" incomplete? →', graphemeEngine.isLastGraphemeIncomplete('শিক্ষ'));
+console.log('   "শিক্ষা" incomplete? →', graphemeEngine.isLastGraphemeIncomplete('শিক্ষা'));
+console.log('   "শিক্" incomplete? →', graphemeEngine.isLastGraphemeIncomplete('শিক্'));
